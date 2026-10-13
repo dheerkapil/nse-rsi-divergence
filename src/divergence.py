@@ -47,8 +47,11 @@ def detect_divergence(df: pd.DataFrame, rsi: pd.Series, params: dict) -> list[di
     if n < max(params["MIN_HISTORY_BARS"], order * 2 + 2):
         return []
 
+    basis = params.get("PIVOT_BASIS", "close")
+    pivot_series = closes if basis == "close" else lows
+
     start = max(order, n - lookback - order)
-    pivots = [p for p in find_pivot_lows(lows, order) if p >= start]
+    pivots = [p for p in find_pivot_lows(pivot_series, order) if p >= start]
     if len(pivots) < 2:
         return []
 
@@ -61,7 +64,7 @@ def detect_divergence(df: pd.DataFrame, rsi: pd.Series, params: dict) -> list[di
         if np.isnan(r[a]) or np.isnan(r[b]):
             continue
         # 1. price: lower low
-        if not (lows[b] < lows[a] * (1.0 - params["MIN_PRICE_DROP_PCT"] / 100.0)):
+        if not (pivot_series[b] < pivot_series[a] * (1.0 - params["MIN_PRICE_DROP_PCT"] / 100.0)):
             continue
         # 2. RSI: higher low
         if not (r[b] > r[a] + params["MIN_RSI_RISE"]):
@@ -86,8 +89,8 @@ def detect_divergence(df: pd.DataFrame, rsi: pd.Series, params: dict) -> list[di
             "signal_date": str(dates[conf]),
             "price": float(closes[conf]),
             "rsi": float(r[conf]),
-            "pivot1_date": str(dates[a]), "pivot1_price": float(lows[a]), "pivot1_rsi": float(r[a]),
-            "pivot2_date": str(dates[b]), "pivot2_price": float(lows[b]), "pivot2_rsi": float(r[b]),
+            "pivot1_date": str(dates[a]), "pivot1_price": float(pivot_series[a]), "pivot1_rsi": float(r[a]),
+            "pivot2_date": str(dates[b]), "pivot2_price": float(pivot_series[b]), "pivot2_rsi": float(r[b]),
             "sep": int(b - a),
             "conf_idx": int(conf),
         })

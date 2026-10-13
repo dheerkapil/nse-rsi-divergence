@@ -22,6 +22,18 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Debug environment
+        run: |
+          echo "PWD=$(pwd)"
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          ls -la
+          echo "--- src ---"
+          ls -la src || echo "NO src dir"
+          echo "--- python ---"
+          python -c "import sys; print(sys.path[:4])"
+          python -c "import src; print('src pkg at', src.__file__)" || echo "IMPORT src FAILED"
+          python -c "import src.downloader; print('src.downloader OK')" || echo "IMPORT src.downloader FAILED"
+
       - name: Restore price history
         uses: actions/cache/restore@v4
         with:

@@ -9,7 +9,7 @@ from src.divergence import detect_divergence
 
 
 def score(cand: dict, params: dict) -> float:
-    """0-100 strength score.
+    """0–100 strength score.
 
     Components: RSI rise (40), depth of the lower price low (20),
     lowness of the second-pivot RSI (25), pivot separation (15).

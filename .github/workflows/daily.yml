@@ -22,10 +22,31 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Restore price history
+        uses: actions/cache/restore@v4
+        with:
+          path: data/market.db
+          key: price-db-${{ github.run_id }}
+          restore-keys: |
+            price-db-
+
+      - name: Backfill history on first run
+        run: |
+          if [ ! -f data/market.db ]; then
+            echo "No cached price DB — running initial ~1yr backfill"
+            python scripts/backfill.py --days 220
+          fi
+
       - name: Run daily scan
         env:
           PROFILE: ${{ vars.PROFILE || 'tight' }}
         run: python run_daily.py
+
+      - name: Save price history
+        uses: actions/cache/save@v4
+        with:
+          path: data/market.db
+          key: price-db-${{ github.run_id }}
 
       - name: Commit signal snapshot
         run: |

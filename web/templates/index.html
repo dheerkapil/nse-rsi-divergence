@@ -68,6 +68,8 @@
             vertical-align:middle; white-space:nowrap; }
         table.table tbody tr:hover { background:var(--row-hover); }
         .sym { font-weight:600; }
+        .symlink { color:var(--primary); text-decoration:none; }
+        .symlink:hover { text-decoration:underline; }
         .num { text-align:right; font-variant-numeric:tabular-nums; }
         .pos { color:var(--success); } .neg { color:var(--danger); }
         .pivot { color:var(--text-muted); font-size:.78rem; }
@@ -174,7 +176,7 @@ function render() {
         const pctCls = pct === null ? '' : (pct >= 0 ? 'pos' : 'neg');
         const pctTxt = pct === null ? '—' : (pct >= 0 ? '+' : '') + fmt(pct) + '%';
         return `<tr>
-            <td class="sym">${s.symbol}</td>
+            <td class="sym"><a class="symlink" href="https://www.tradingview.com/chart/?symbol=NSE:${s.symbol}" target="_blank" rel="noopener">${s.symbol}</a></td>
             <td>${s.signal_date||'—'}</td>
             <td class="num">₹${fmt(s.price)}</td>
             <td class="num">₹${fmt(s.last_price)}</td>

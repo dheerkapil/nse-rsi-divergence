@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="theme-color" content="#1a73e8">
+    <title>📈 RSI Divergence</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg:#f8f9fa; --surface:#fff; --surface-2:#f1f3f4; --text:#202124;
+            --text-muted:#5f6368; --border:#dadce0; --border-light:#e8eaed;
+            --primary:#1a73e8; --primary-fill:#1a73e8; --primary-text:#fff;
+            --success:#1e8e3e; --danger:#d93025; --warning:#b06000; --warning-bg:#feefc3;
+            --input-bg:#fff; --row-hover:#f8f9fa;
+            --shadow-1:0 1px 2px rgba(60,64,67,.1),0 1px 3px 1px rgba(60,64,67,.06);
+            --shadow-2:0 1px 3px rgba(60,64,67,.15),0 4px 8px 3px rgba(60,64,67,.08);
+            --focus-ring:0 0 0 3px rgba(26,115,232,.35);
+        }
+        body.dark {
+            --bg:#000; --surface:#121212; --surface-2:#1e1e1e; --text:#e8eaed;
+            --text-muted:#b0b4b8; --border:#3c4043; --border-light:#2a2a2a;
+            --primary:#8ab4f8; --primary-fill:#8ab4f8; --primary-text:#202124;
+            --success:#81c995; --danger:#f28b82; --warning:#fdd663; --warning-bg:#3c2f00;
+            --input-bg:#1e1e1e; --row-hover:#1a1a1a;
+            --shadow-1:0 1px 3px rgba(0,0,0,.7),0 1px 2px rgba(0,0,0,.5);
+            --shadow-2:0 4px 8px rgba(0,0,0,.7),0 1px 3px rgba(0,0,0,.5);
+            --focus-ring:0 0 0 3px rgba(138,180,248,.45);
+        }
+        * { box-sizing:border-box; }
+        html { background-color:var(--bg) !important; min-height:100vh; }
+        body {
+            font-family:'Roboto',system-ui,-apple-system,'Segoe UI',sans-serif;
+            background-color:var(--bg) !important; color:var(--text); margin:0; padding:12px;
+            min-height:100vh; transition:background .2s ease,color .2s ease;
+        }
+        .container { max-width:100%; padding:0; }
+        .card { border-radius:16px; background:var(--surface); box-shadow:var(--shadow-1);
+            margin-bottom:12px; padding:16px; border:none; color:var(--text); }
+        .card h5 { font-size:1rem; font-weight:500; margin-bottom:12px; }
+        .text-muted { color:var(--text-muted) !important; }
+        .header-row { display:flex; align-items:center; justify-content:space-between;
+            margin-bottom:16px; padding:0 4px; gap:8px; }
+        .header-row h1 { font-size:1.4rem; font-weight:500; margin:0; }
+        .header-actions { display:flex; gap:8px; align-items:center; }
+        .theme-toggle-btn { width:44px; height:44px; border-radius:50%; border:none;
+            background:var(--surface-2); color:var(--text); font-size:1.2rem; cursor:pointer;
+            box-shadow:var(--shadow-1); }
+        .theme-toggle-btn:hover { background:var(--border); }
+        .logout-btn { height:44px; padding:0 18px; border-radius:22px; border:1px solid var(--border);
+            background:var(--surface); color:var(--text); font-size:.85rem; font-weight:500;
+            cursor:pointer; box-shadow:var(--shadow-1); }
+        .logout-btn:hover { background:var(--surface-2); border-color:var(--danger); color:var(--danger); }
+        .stat-grid { display:flex; gap:24px; flex-wrap:wrap; }
+        .stat .k { font-size:.7rem; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); }
+        .stat .v { font-size:1.15rem; font-weight:500; }
+        .toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .form-control-sm { font-size:.85rem; padding:.45rem .7rem; background:var(--input-bg);
+            color:var(--text); border:1px solid var(--border); border-radius:8px; }
+        .form-control-sm:focus { border-color:var(--primary); box-shadow:var(--focus-ring); outline:none; }
+        .table-scroll { overflow-x:auto; }
+        table.table { font-size:.85rem; margin:0; color:var(--text); }
+        table.table thead th { font-size:.72rem; text-transform:uppercase; letter-spacing:.3px;
+            color:var(--text-muted); font-weight:500; border-bottom:1px solid var(--border);
+            white-space:nowrap; padding:.5rem .6rem; cursor:pointer; user-select:none; }
+        table.table tbody td { border-bottom:1px solid var(--border-light); padding:.5rem .6rem;
+            vertical-align:middle; white-space:nowrap; }
+        table.table tbody tr:hover { background:var(--row-hover); }
+        .sym { font-weight:600; }
+        .num { text-align:right; font-variant-numeric:tabular-nums; }
+        .pos { color:var(--success); } .neg { color:var(--danger); }
+        .pivot { color:var(--text-muted); font-size:.78rem; }
+        .badge-strength { display:inline-block; min-width:44px; text-align:center; padding:.15rem .5rem;
+            border-radius:999px; font-weight:600; font-size:.78rem; }
+        .s-strong { background:rgba(30,142,62,.15); color:var(--success); }
+        .s-med { background:var(--warning-bg); color:var(--warning); }
+        .s-weak { background:var(--surface-2); color:var(--text-muted); }
+        .empty { padding:32px; text-align:center; color:var(--text-muted); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-row">
+        <h1>📈 RSI Divergence</h1>
+        <div class="header-actions">
+            <button id="themeToggle" class="theme-toggle-btn" title="Toggle theme">🌙</button>
+            <button id="logoutBtn" class="logout-btn" onclick="location.href='{{ url_for('logout') }}'">Logout</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="stat-grid">
+            <div class="stat"><div class="k">Active signals</div><div class="v">{{ signals|length }}</div></div>
+            <div class="stat"><div class="k">Profile</div><div class="v">{{ snap.profile or '—' }}</div></div>
+            <div class="stat"><div class="k">Data as of</div><div class="v">{{ snap.asof or '—' }}</div></div>
+            <div class="stat"><div class="k">Generated</div><div class="v">{{ (snap.generated_at or '—')[:19].replace('T',' ') }}</div></div>
+        </div>
+    </div>
+
+    <div class="card" style="padding:10px 14px;">
+        <div class="toolbar">
+            <span style="font-size:.85rem;font-weight:500;color:var(--text-muted);">🔎</span>
+            <input type="text" id="searchBox" class="form-control-sm" style="flex:1;min-width:200px;"
+                   placeholder="Search symbol (press / to focus)" autocomplete="off">
+            <label class="text-muted" style="font-size:.8rem;">Min strength</label>
+            <input type="number" id="minStrength" class="form-control-sm" style="width:90px;"
+                   value="0" min="0" max="100" step="5">
+        </div>
+    </div>
+
+    <div class="card" style="padding:10px 4px;">
+        <h5 style="padding-left:8px;">📋 Buy signals — regular bullish divergence</h5>
+        <div class="table-scroll">
+            <table class="table table-hover" id="sigTable">
+                <thead>
+                    <tr>
+                        <th data-key="symbol">Symbol <span>↕</span></th>
+                        <th data-key="signal_date">Signal <span>↕</span></th>
+                        <th data-key="price" class="num">Entry <span>↕</span></th>
+                        <th data-key="last_price" class="num">Last <span>↕</span></th>
+                        <th data-key="pct_since" class="num">% Chg <span>↕</span></th>
+                        <th data-key="rsi" class="num">RSI <span>↕</span></th>
+                        <th>Pivot-1</th>
+                        <th>Pivot-2</th>
+                        <th data-key="strength" class="num">Strength <span>↕</span></th>
+                        <th data-key="age_bars" class="num">Age <span>↕</span></th>
+                    </tr>
+                </thead>
+                <tbody id="sigBody"></tbody>
+            </table>
+            <div id="empty" class="empty" style="display:none;">No signals match.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const SIGNALS = {{ signals|tojson }};
+const root = document.body, toggle = document.getElementById('themeToggle');
+if (localStorage.getItem('theme') === 'dark') root.classList.add('dark');
+toggle.textContent = root.classList.contains('dark') ? '☀️' : '🌙';
+toggle.onclick = () => {
+    root.classList.toggle('dark');
+    localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light');
+    toggle.textContent = root.classList.contains('dark') ? '☀️' : '🌙';
+};
+
+const fmt = (n, d=2) => (n === null || n === undefined || isNaN(n)) ? '—' : Number(n).toFixed(d);
+const pivot = (dt, p, r) => `<span class="pivot">${dt||'—'} · ₹${fmt(p)} · RSI ${fmt(r,1)}</span>`;
+const badge = s => {
+    const cls = s >= 70 ? 's-strong' : s >= 50 ? 's-med' : 's-weak';
+    return `<span class="badge-strength ${cls}">${fmt(s,0)}</span>`;
+};
+
+let sortKey = 'strength', sortDir = -1;
+function enriched() {
+    return SIGNALS.map(s => {
+        const pct = (s.last_price && s.price) ? (s.last_price - s.price) / s.price * 100 : null;
+        return {...s, pct_since: pct};
+    });
+}
+function render() {
+    const q = (document.getElementById('searchBox').value || '').trim().toUpperCase();
+    const minS = parseFloat(document.getElementById('minStrength').value) || 0;
+    let rows = enriched().filter(s => s.symbol.includes(q) && (s.strength || 0) >= minS);
+    rows.sort((a, b) => {
+        const x = a[sortKey], y = b[sortKey];
+        if (x === y) return 0;
+        return (x > y ? 1 : -1) * sortDir;
+    });
+    const body = document.getElementById('sigBody');
+    body.innerHTML = rows.map(s => {
+        const pct = s.pct_since;
+        const pctCls = pct === null ? '' : (pct >= 0 ? 'pos' : 'neg');
+        const pctTxt = pct === null ? '—' : (pct >= 0 ? '+' : '') + fmt(pct) + '%';
+        return `<tr>
+            <td class="sym">${s.symbol}</td>
+            <td>${s.signal_date||'—'}</td>
+            <td class="num">₹${fmt(s.price)}</td>
+            <td class="num">₹${fmt(s.last_price)}</td>
+            <td class="num ${pctCls}">${pctTxt}</td>
+            <td class="num">${fmt(s.rsi,1)}</td>
+            <td>${pivot(s.pivot1_date, s.pivot1_price, s.pivot1_rsi)}</td>
+            <td>${pivot(s.pivot2_date, s.pivot2_price, s.pivot2_rsi)}</td>
+            <td class="num">${badge(s.strength)}</td>
+            <td class="num">${s.age_bars ?? '—'}d</td>
+        </tr>`;
+    }).join('');
+    document.getElementById('empty').style.display = rows.length ? 'none' : 'block';
+}
+document.querySelectorAll('#sigTable thead th[data-key]').forEach(th => {
+    th.onclick = () => {
+        const k = th.dataset.key;
+        if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = -1; }
+        render();
+    };
+});
+document.getElementById('searchBox').oninput = render;
+document.getElementById('minStrength').oninput = render;
+document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault(); document.getElementById('searchBox').focus();
+    }
+});
+render();
+</script>
+</body>
+</html>

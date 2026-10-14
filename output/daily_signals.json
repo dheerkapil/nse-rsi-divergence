@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-13T23:22:31.810079+05:30",
+  "generated_at": "2026-10-14T22:57:50.362886+05:30",
   "profile": "tight",
-  "asof": "2026-10-13",
+  "asof": "2026-10-14",
   "count": 33,
   "signals": [
     {
@@ -19,9 +19,9 @@
       "conf_idx": 150,
       "strength": 77.2,
       "profile": "tight",
-      "last_price": 34.7,
-      "last_date": "2026-10-13",
-      "age_bars": 6
+      "last_price": 34.05,
+      "last_date": "2026-10-14",
+      "age_bars": 7
     },
     {
       "symbol": "RMC",
@@ -38,9 +38,9 @@
       "conf_idx": 57,
       "strength": 76.0,
       "profile": "tight",
-      "last_price": 193.62,
-      "last_date": "2026-10-13",
-      "age_bars": 24
+      "last_price": 209.46,
+      "last_date": "2026-10-14",
+      "age_bars": 25
     },
     {
       "symbol": "MEDPLUS",
@@ -57,9 +57,9 @@
       "conf_idx": 122,
       "strength": 63.8,
       "profile": "tight",
-      "last_price": 617.0,
-      "last_date": "2026-10-13",
-      "age_bars": 34
+      "last_price": 613.25,
+      "last_date": "2026-10-14",
+      "age_bars": 35
     },
     {
       "symbol": "KPIGREEN",
@@ -76,9 +76,9 @@
       "conf_idx": 142,
       "strength": 60.6,
       "profile": "tight",
-      "last_price": 326.75,
-      "last_date": "2026-10-13",
-      "age_bars": 14
+      "last_price": 325.3,
+      "last_date": "2026-10-14",
+      "age_bars": 15
     },
     {
       "symbol": "WAAREEINDO",
@@ -95,9 +95,9 @@
       "conf_idx": 96,
       "strength": 57.3,
       "profile": "tight",
-      "last_price": 207.27,
-      "last_date": "2026-10-13",
-      "age_bars": 14
+      "last_price": 217.59,
+      "last_date": "2026-10-14",
+      "age_bars": 15
     },
     {
       "symbol": "PRECAM",
@@ -114,9 +114,9 @@
       "conf_idx": 155,
       "strength": 55.2,
       "profile": "tight",
-      "last_price": 113.45,
-      "last_date": "2026-10-13",
-      "age_bars": 1
+      "last_price": 113.34,
+      "last_date": "2026-10-14",
+      "age_bars": 2
     },
     {
       "symbol": "GUJENERGY",
@@ -133,9 +133,9 @@
       "conf_idx": 38,
       "strength": 52.6,
       "profile": "tight",
-      "last_price": 221.8,
-      "last_date": "2026-10-13",
-      "age_bars": 26
+      "last_price": 224.96,
+      "last_date": "2026-10-14",
+      "age_bars": 27
     },
     {
       "symbol": "KALAMANDIR",
@@ -152,9 +152,9 @@
       "conf_idx": 122,
       "strength": 50.7,
       "profile": "tight",
-      "last_price": 74.17,
-      "last_date": "2026-10-13",
-      "age_bars": 34
+      "last_price": 74.19,
+      "last_date": "2026-10-14",
+      "age_bars": 35
     },
     {
       "symbol": "GODIGIT",
@@ -171,9 +171,9 @@
       "conf_idx": 72,
       "strength": 49.8,
       "profile": "tight",
-      "last_price": 280.85,
-      "last_date": "2026-10-13",
-      "age_bars": 84
+      "last_price": 284.0,
+      "last_date": "2026-10-14",
+      "age_bars": 85
     },
     {
       "symbol": "JKLAKSHMI",
@@ -190,9 +190,9 @@
       "conf_idx": 155,
       "strength": 48.8,
       "profile": "tight",
-      "last_price": 476.9,
-      "last_date": "2026-10-13",
-      "age_bars": 1
+      "last_price": 469.6,
+      "last_date": "2026-10-14",
+      "age_bars": 2
     },
     {
       "symbol": "TATAELXSI",
@@ -209,9 +209,9 @@
       "conf_idx": 103,
       "strength": 48.4,
       "profile": "tight",
-      "last_price": 3426.7,
-      "last_date": "2026-10-13",
-      "age_bars": 53
+      "last_price": 3623.1,
+      "last_date": "2026-10-14",
+      "age_bars": 54
     },
     {
       "symbol": "TCS",
@@ -228,9 +228,9 @@
       "conf_idx": 73,
       "strength": 45.7,
       "profile": "tight",
-      "last_price": 2269.3,
-      "last_date": "2026-10-13",
-      "age_bars": 83
+      "last_price": 2304.9,
+      "last_date": "2026-10-14",
+      "age_bars": 84
     },
     {
       "symbol": "IPL",
@@ -247,9 +247,9 @@
       "conf_idx": 141,
       "strength": 44.4,
       "profile": "tight",
-      "last_price": 126.74,
-      "last_date": "2026-10-13",
-      "age_bars": 15
+      "last_price": 128.01,
+      "last_date": "2026-10-14",
+      "age_bars": 16
     },
     {
       "symbol": "WAKEFIT",
@@ -266,9 +266,9 @@
       "conf_idx": 70,
       "strength": 41.1,
       "profile": "tight",
-      "last_price": 134.4,
-      "last_date": "2026-10-13",
-      "age_bars": 86
+      "last_price": 134.17,
+      "last_date": "2026-10-14",
+      "age_bars": 87
     },
     {
       "symbol": "GRMOVER",
@@ -285,9 +285,9 @@
       "conf_idx": 108,
       "strength": 40.3,
       "profile": "tight",
-      "last_price": 91.0,
-      "last_date": "2026-10-13",
-      "age_bars": 48
+      "last_price": 93.58,
+      "last_date": "2026-10-14",
+      "age_bars": 49
     },
     {
       "symbol": "GREENPANEL",
@@ -304,9 +304,9 @@
       "conf_idx": 141,
       "strength": 38.4,
       "profile": "tight",
-      "last_price": 150.49,
-      "last_date": "2026-10-13",
-      "age_bars": 15
+      "last_price": 147.83,
+      "last_date": "2026-10-14",
+      "age_bars": 16
     },
     {
       "symbol": "ORKLAINDIA",
@@ -323,9 +323,9 @@
       "conf_idx": 118,
       "strength": 38.2,
       "profile": "tight",
-      "last_price": 544.45,
-      "last_date": "2026-10-13",
-      "age_bars": 38
+      "last_price": 547.35,
+      "last_date": "2026-10-14",
+      "age_bars": 39
     },
     {
       "symbol": "WEBELSOLAR",
@@ -342,9 +342,9 @@
       "conf_idx": 143,
       "strength": 37.0,
       "profile": "tight",
-      "last_price": 65.8,
-      "last_date": "2026-10-13",
-      "age_bars": 13
+      "last_price": 69.09,
+      "last_date": "2026-10-14",
+      "age_bars": 14
     },
     {
       "symbol": "GANESHCP",
@@ -361,9 +361,9 @@
       "conf_idx": 119,
       "strength": 34.9,
       "profile": "tight",
-      "last_price": 161.12,
-      "last_date": "2026-10-13",
-      "age_bars": 37
+      "last_price": 163.82,
+      "last_date": "2026-10-14",
+      "age_bars": 38
     },
     {
       "symbol": "REMSONSIND",
@@ -380,9 +380,9 @@
       "conf_idx": 86,
       "strength": 34.8,
       "profile": "tight",
-      "last_price": 100.92,
-      "last_date": "2026-10-13",
-      "age_bars": 70
+      "last_price": 101.02,
+      "last_date": "2026-10-14",
+      "age_bars": 71
     },
     {
       "symbol": "GMBREW",
@@ -399,9 +399,9 @@
       "conf_idx": 70,
       "strength": 34.1,
       "profile": "tight",
-      "last_price": 869.55,
-      "last_date": "2026-10-13",
-      "age_bars": 86
+      "last_price": 876.55,
+      "last_date": "2026-10-14",
+      "age_bars": 87
     },
     {
       "symbol": "ACSTECH",
@@ -437,9 +437,9 @@
       "conf_idx": 73,
       "strength": 33.5,
       "profile": "tight",
-      "last_price": 1321.4,
-      "last_date": "2026-10-13",
-      "age_bars": 83
+      "last_price": 1376.8,
+      "last_date": "2026-10-14",
+      "age_bars": 84
     },
     {
       "symbol": "AURIONPRO",
@@ -456,9 +456,9 @@
       "conf_idx": 137,
       "strength": 33.4,
       "profile": "tight",
-      "last_price": 610.6,
-      "last_date": "2026-10-13",
-      "age_bars": 19
+      "last_price": 609.05,
+      "last_date": "2026-10-14",
+      "age_bars": 20
     },
     {
       "symbol": "AXISCADES",
@@ -475,9 +475,9 @@
       "conf_idx": 106,
       "strength": 33.4,
       "profile": "tight",
-      "last_price": 2086.9,
-      "last_date": "2026-10-13",
-      "age_bars": 50
+      "last_price": 2090.6,
+      "last_date": "2026-10-14",
+      "age_bars": 51
     },
     {
       "symbol": "TTML",
@@ -494,9 +494,9 @@
       "conf_idx": 142,
       "strength": 33.2,
       "profile": "tight",
-      "last_price": 33.76,
-      "last_date": "2026-10-13",
-      "age_bars": 14
+      "last_price": 33.92,
+      "last_date": "2026-10-14",
+      "age_bars": 15
     },
     {
       "symbol": "SCILAL",
@@ -513,9 +513,9 @@
       "conf_idx": 108,
       "strength": 31.8,
       "profile": "tight",
-      "last_price": 37.23,
-      "last_date": "2026-10-13",
-      "age_bars": 48
+      "last_price": 37.74,
+      "last_date": "2026-10-14",
+      "age_bars": 49
     },
     {
       "symbol": "JKTYRE",
@@ -532,9 +532,9 @@
       "conf_idx": 151,
       "strength": 31.2,
       "profile": "tight",
-      "last_price": 336.65,
-      "last_date": "2026-10-13",
-      "age_bars": 5
+      "last_price": 336.35,
+      "last_date": "2026-10-14",
+      "age_bars": 6
     },
     {
       "symbol": "REPRO",
@@ -551,9 +551,9 @@
       "conf_idx": 141,
       "strength": 29.7,
       "profile": "tight",
-      "last_price": 312.05,
-      "last_date": "2026-10-13",
-      "age_bars": 15
+      "last_price": 310.45,
+      "last_date": "2026-10-14",
+      "age_bars": 16
     },
     {
       "symbol": "DOLPHIN",
@@ -570,9 +570,9 @@
       "conf_idx": 91,
       "strength": 29.4,
       "profile": "tight",
-      "last_price": 637.65,
-      "last_date": "2026-10-13",
-      "age_bars": 65
+      "last_price": 632.15,
+      "last_date": "2026-10-14",
+      "age_bars": 66
     },
     {
       "symbol": "TIRUMALCHM",
@@ -589,9 +589,9 @@
       "conf_idx": 85,
       "strength": 28.8,
       "profile": "tight",
-      "last_price": 140.32,
-      "last_date": "2026-10-13",
-      "age_bars": 71
+      "last_price": 142.45,
+      "last_date": "2026-10-14",
+      "age_bars": 72
     },
     {
       "symbol": "STUDDS",
@@ -608,9 +608,9 @@
       "conf_idx": 152,
       "strength": 28.3,
       "profile": "tight",
-      "last_price": 419.8,
-      "last_date": "2026-10-13",
-      "age_bars": 4
+      "last_price": 411.6,
+      "last_date": "2026-10-14",
+      "age_bars": 5
     },
     {
       "symbol": "TARIL",
@@ -627,9 +627,9 @@
       "conf_idx": 152,
       "strength": 24.9,
       "profile": "tight",
-      "last_price": 304.0,
-      "last_date": "2026-10-13",
-      "age_bars": 4
+      "last_price": 349.5,
+      "last_date": "2026-10-14",
+      "age_bars": 5
     }
   ]
 }

@@ -37,7 +37,7 @@ def init_db() -> None:
     # Drop a signals table that predates the 'direction' column
     if conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='signals'").fetchone():
         cols = [row[1] for row in conn.execute("PRAGMA table_info(signals)")]
-        if "direction" not in cols or "invalidated" not in cols:
+        if not {"direction", "invalidated", "state"} <= set(cols):
             conn.execute("DROP TABLE signals")
     c.execute(
         """
@@ -54,8 +54,9 @@ def init_db() -> None:
             profile      TEXT,
             is_fno       INTEGER DEFAULT 0,
             invalidated  INTEGER DEFAULT 0,
+            state        TEXT DEFAULT 'confirmed',
             created_at   TEXT,
-            UNIQUE (symbol, signal_date, profile, direction)
+            UNIQUE (symbol, signal_date, profile, direction, state)
         )
         """
     )
@@ -113,6 +114,29 @@ def prune_prices(keep: int) -> int:
     return total
 
 
+def purge_duplicate_days(threshold: float = 0.95) -> int:
+    """Delete dates whose rows are (almost) all identical to the previous day.
+
+    These come from NSE serving the previous trading day's bhavcopy file for a
+    holiday (HTTP 200 with stale DATE1). Returns rows deleted.
+    """
+    conn = get_conn()
+    df = pd.read_sql_query("SELECT symbol, date, close FROM prices ORDER BY symbol, date", conn)
+    if df.empty:
+        conn.close()
+        return 0
+    df["prev"] = df.groupby("symbol")["close"].shift()
+    df["same"] = df["close"] == df["prev"]
+    frac = df.dropna(subset=["prev"]).groupby("date")["same"].mean()
+    bad = [d for d, v in frac.items() if v >= threshold]
+    total = 0
+    for dt in bad:
+        total += conn.execute("DELETE FROM prices WHERE date = ?", (dt,)).rowcount
+    conn.commit()
+    conn.close()
+    return total
+
+
 def get_price_history(symbol: str, limit: int | None = None) -> pd.DataFrame:
     conn = get_conn()
     q = "SELECT date, open, high, low, close, prev_close, volume, turnover_lacs FROM prices WHERE symbol = ? ORDER BY date"
@@ -151,9 +175,9 @@ def store_signals(signals: list[dict]) -> int:
                 symbol, direction, signal_date, price, rsi,
                 pivot1_date, pivot1_price, pivot1_rsi,
                 pivot2_date, pivot2_price, pivot2_rsi,
-                strength, profile, is_fno, invalidated, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-            ON CONFLICT(symbol, signal_date, profile, direction) DO UPDATE SET
+                strength, profile, is_fno, invalidated, state, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            ON CONFLICT(symbol, signal_date, profile, direction, state) DO UPDATE SET
                 price=excluded.price, rsi=excluded.rsi,
                 pivot1_date=excluded.pivot1_date, pivot1_price=excluded.pivot1_price, pivot1_rsi=excluded.pivot1_rsi,
                 pivot2_date=excluded.pivot2_date, pivot2_price=excluded.pivot2_price, pivot2_rsi=excluded.pivot2_rsi,
@@ -164,6 +188,7 @@ def store_signals(signals: list[dict]) -> int:
                 s["pivot1_date"], s["pivot1_price"], s["pivot1_rsi"],
                 s["pivot2_date"], s["pivot2_price"], s["pivot2_rsi"],
                 s["strength"], s["profile"], int(bool(s.get("is_fno"))), int(bool(s.get("invalidated"))),
+                s.get("state", "confirmed"),
             ),
         )
         n += 1

@@ -22,8 +22,8 @@ import requests  # noqa: E402
 import config  # noqa: E402
 from src.downloader import fetch_bhavcopy  # noqa: E402
 from src.database import (  # noqa: E402
-    init_db, store_prices, prune_prices, get_symbols, get_price_history,
-    store_signals, set_meta, get_last_price_date,
+    init_db, store_prices, prune_prices, purge_duplicate_days,
+    get_symbols, get_price_history, store_signals, set_meta, get_last_price_date,
 )
 from src.signals import scan_symbol  # noqa: E402
 
@@ -82,7 +82,7 @@ def write_snapshot(signals: list[dict], params: dict, asof: str) -> Path:
 def write_csv(signals: list[dict]) -> Path:
     """Write the snapshot as a flat CSV (handy for scripting / downloads)."""
     import csv
-    cols = ["symbol", "direction", "signal_date", "price", "last_price", "pct_since",
+    cols = ["symbol", "direction", "state", "signal_date", "price", "last_price", "pct_since",
             "rsi", "pivot1_date", "pivot1_price", "pivot1_rsi",
             "pivot2_date", "pivot2_price", "pivot2_rsi",
             "strength", "age_bars", "is_fno", "invalidated"]
@@ -117,10 +117,12 @@ def main() -> int:
             print(f"[run_daily] No bhavcopy available at/behind {asof}. Aborting.")
             return 1
         n = store_prices(df)
+        dropped = purge_duplicate_days()
         pruned = prune_prices(config.RETENTION_BARS)
         asof = got.isoformat()
-        print(f"[run_daily] Stored {n} EQ rows for {asof}; pruned {pruned} old row(s) "
-              f"(window={config.RETENTION_BARS} bars/symbol, profile={params['PROFILE']})")
+        print(f"[run_daily] Stored {n} EQ rows for {asof}; dropped {dropped} stale-day row(s); "
+              f"pruned {pruned} old row(s) (window={config.RETENTION_BARS} bars/symbol, "
+              f"profile={params['PROFILE']})")
 
     fno = load_fno()
     signals = scan_all(params, fno)
@@ -132,7 +134,7 @@ def main() -> int:
 
     print(f"[run_daily] {len(signals)} active signal(s); snapshot -> {snap}")
     for s in signals[:15]:
-        print(f"   {s['symbol']:>12}  {s['direction']:<8} {s['signal_date']}  "
+        print(f"   {s['symbol']:>12}  {s['direction']:<8} {s['state']:<9} {s['signal_date']}  "
               f"RSI2={s['pivot2_rsi']:.1f}  strength={s['strength']}")
     return 0
 

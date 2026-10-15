@@ -111,6 +111,7 @@ def detect_divergence(df: pd.DataFrame, rsi: pd.Series, params: dict,
         candidates.append({
             "symbol": None,
             "direction": direction,
+            "state": "confirmed",
             "signal_date": str(dates[conf]),
             "price": float(closes[conf]),
             "rsi": float(r[conf]),
@@ -120,3 +121,86 @@ def detect_divergence(df: pd.DataFrame, rsi: pd.Series, params: dict,
             "conf_idx": int(conf),
         })
     return candidates
+
+
+def detect_forming(df: pd.DataFrame, rsi: pd.Series, params: dict,
+                   direction: str = "bullish") -> list[dict]:
+    """Provisional divergence, published *before* the second pivot is confirmed.
+
+    The second pivot is the most extreme close in the last ``PIVOT_ORDER`` bars
+    (knowable now, no look-ahead); it is paired with the last *confirmed* fractal
+    pivot. Returns at most one candidate. Superseded once that low/high becomes a
+    proper fractal, at which point the confirmed detector takes over.
+    """
+    order = params["PIVOT_ORDER"]
+    min_sep = params["MIN_PIVOT_SEPARATION"]
+
+    lows = df["low"].to_numpy(dtype=float)
+    highs = df["high"].to_numpy(dtype=float)
+    closes = df["close"].to_numpy(dtype=float)
+    dates = df["date"].to_numpy()
+    r = rsi.to_numpy(dtype=float)
+    n = len(df)
+    if n < max(params["MIN_HISTORY_BARS"], order * 2 + 2):
+        return []
+
+    bullish = direction == "bullish"
+    basis = params.get("PIVOT_BASIS", "close")
+    series = closes if basis == "close" else (lows if bullish else highs)
+
+    # provisional second pivot = most extreme close in the last `order` bars
+    win = series[n - order:]
+    p = (n - order) + (int(np.argmin(win)) if bullish else int(np.argmax(win)))
+
+    piv = find_pivot_lows(series, order) if bullish else find_pivot_highs(series, order)
+    prev = [x for x in piv if x <= p - order]
+    if not prev:
+        return []
+    a = prev[-1]
+    if p - a < min_sep or np.isnan(r[a]) or np.isnan(r[p]):
+        return []
+
+    gate = params["DOWNTURN_GATE"] if bullish else params.get("UPTREND_GATE", params["DOWNTURN_GATE"])
+    ema_vals = ema(closes, params["DOWNTURN_EMA_SPAN"]).to_numpy() if gate else None
+
+    flat = params.get("FLAT_TOL_PCT", 0.0) / 100.0
+    rsi_delta = params["MIN_RSI_RISE"]
+
+    if bullish:
+        if not (series[p] <= series[a] * (1.0 + flat)):
+            return []
+        if not (r[p] > r[a] + rsi_delta):
+            return []
+        if not (r[p] < params["RSI_CEILING"]):
+            return []
+    else:
+        if not (series[p] >= series[a] * (1.0 - flat)):
+            return []
+        if not (r[p] < r[a] - rsi_delta):
+            return []
+        if not (r[p] > params.get("RSI_FLOOR", 50.0)):
+            return []
+
+    if gate and ema_vals is not None:
+        lb = params["DOWNTURN_SLOPE_BARS"]
+        if p - lb < 0:
+            return []
+        if bullish:
+            if not (closes[p] < ema_vals[p] and ema_vals[p] < ema_vals[p - lb]):
+                return []
+        else:
+            if not (closes[p] > ema_vals[p] and ema_vals[p] > ema_vals[p - lb]):
+                return []
+
+    return [{
+        "symbol": None,
+        "direction": direction,
+        "state": "forming",
+        "signal_date": str(dates[p]),
+        "price": float(closes[p]),
+        "rsi": float(r[p]),
+        "pivot1_date": str(dates[a]), "pivot1_price": float(series[a]), "pivot1_rsi": float(r[a]),
+        "pivot2_date": str(dates[p]), "pivot2_price": float(series[p]), "pivot2_rsi": float(r[p]),
+        "sep": int(p - a),
+        "conf_idx": int(p),
+    }]

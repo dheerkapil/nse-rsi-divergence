@@ -1,11 +1,17 @@
-"""Turn raw divergences into scored, filtered signals (bullish and bearish)."""
+"""Turn raw divergences into scored, filtered signals (bullish and bearish).
+
+Two states:
+  * ``confirmed`` — the second pivot is a fully formed fractal (order bars after it).
+  * ``forming``   — the second pivot is the most extreme close in the last
+                    ``PIVOT_ORDER`` bars (provisional; published early).
+"""
 from __future__ import annotations
 
 import pandas as pd
 
 import config
 from src.indicators import rsi
-from src.divergence import detect_divergence
+from src.divergence import detect_divergence, detect_forming
 
 DIRECTIONS = ("bullish", "bearish")
 
@@ -31,8 +37,28 @@ def score(cand: dict, params: dict) -> float:
     return round(c_rsi + c_move + c_level + c_sep, 1)
 
 
+def _finalize(cand: dict, symbol: str, df: pd.DataFrame, params: dict,
+              fno: set | None, last_close: float) -> dict:
+    cand["symbol"] = symbol
+    cand["strength"] = score(cand, params)
+    cand["profile"] = params["PROFILE"]
+    cand["last_price"] = last_close
+    cand["last_date"] = str(df["date"].iloc[-1])
+    cand["age_bars"] = int(len(df) - 1 - cand["conf_idx"])
+    cand["is_fno"] = bool(fno and symbol in fno)
+    cand.setdefault("state", "confirmed")
+    # invalidated if price closes beyond the level that defined the setup,
+    # on any bar after the confirmation date (closes only)
+    after = df["close"].iloc[cand["conf_idx"] + 1:]
+    if cand["direction"] == "bullish":
+        cand["invalidated"] = bool((after < cand["pivot2_price"]).any())
+    else:
+        cand["invalidated"] = bool((after > cand["pivot2_price"]).any())
+    return cand
+
+
 def scan_symbol(symbol: str, df: pd.DataFrame, params: dict, fno: set | None = None) -> list[dict]:
-    """Return the best bullish and/or bearish signal for one symbol (0-2 items)."""
+    """Return the symbol's confirmed and/or forming signals (0-4 items)."""
     if df is None or len(df) < params["MIN_HISTORY_BARS"]:
         return []
 
@@ -55,22 +81,10 @@ def scan_symbol(symbol: str, df: pd.DataFrame, params: dict, fno: set | None = N
     out: list[dict] = []
     for direction in DIRECTIONS:
         cands = detect_divergence(df, r, params, direction)
-        if not cands:
-            continue
-        best = max(cands, key=lambda c: c["conf_idx"])
-        best["symbol"] = symbol
-        best["strength"] = score(best, params)
-        best["profile"] = params["PROFILE"]
-        best["last_price"] = last_close
-        best["last_date"] = str(df["date"].iloc[-1])
-        best["age_bars"] = int(len(df) - 1 - best["conf_idx"])
-        best["is_fno"] = bool(fno and symbol in fno)
-        # invalidated if price closes beyond the level that defined the setup,
-        # on any bar after the confirmation date (closes only)
-        after = df["close"].iloc[best["conf_idx"] + 1:]
-        if direction == "bullish":
-            best["invalidated"] = bool((after < best["pivot2_price"]).any())
-        else:
-            best["invalidated"] = bool((after > best["pivot2_price"]).any())
-        out.append(best)
+        if cands:
+            best = max(cands, key=lambda c: c["conf_idx"])
+            out.append(_finalize(best, symbol, df, params, fno, last_close))
+        form = detect_forming(df, r, params, direction)
+        if form:
+            out.append(_finalize(form[0], symbol, df, params, fno, last_close))
     return out

@@ -65,6 +65,15 @@ def _parse(content: bytes, d: date) -> pd.DataFrame:
     if missing:
         raise ValueError(f"bhavcopy missing columns: {missing}")
 
+    # The NSE archive serves the PREVIOUS trading day's file (HTTP 200) for
+    # non-trading dates. Trust the file's own DATE1, not the requested date, so
+    # holidays are not stored as duplicates of the prior day.
+    if "date_raw" in df.columns:
+        raw = df["date_raw"].astype(str).str.strip()
+        fdates = pd.to_datetime(raw, format="%d-%b-%Y", errors="coerce").dropna()
+        if not fdates.empty and fdates.dt.date.iloc[0] != d:
+            return None
+
     df = df[df["series"].astype(str).str.strip() == config.BHAVCOPY_SERIES].copy()
     df["symbol"] = df["symbol"].astype(str).str.strip()
     df["date"] = d.isoformat()

@@ -139,6 +139,9 @@
             <label class="text-muted" style="font-size:.8rem;">Min strength</label>
             <input type="number" id="minStrength" class="form-control-sm" style="width:78px;"
                    value="0" min="0" max="100" step="5">
+            <label class="text-muted" style="font-size:.8rem;">Max age (candles)</label>
+            <input type="number" id="maxAge" class="form-control-sm" style="width:88px;"
+                   value="30" min="0" step="5">
             <button id="downloadBtn" class="logout-btn" title="Download the current list as CSV">⬇ CSV</button>
         </div>
     </div>
@@ -197,18 +200,21 @@ function enriched() {
     });
 }
 function render() {
+    const q = (document.getElementById('searchBox').value || '').trim().toUpperCase();
+    const minS = parseFloat(document.getElementById('minStrength').value) || 0;
+    const maxAge = parseInt(document.getElementById('maxAge').value, 10);
     document.getElementById('tableTitle').textContent =
         `📋 Signals — regular ${state.direction} divergence` +
         (state.universe === 'fno' ? ' (F&O)' : '') +
         (state.state !== 'all' ? ` — ${state.state}` : '') +
-        (state.view === 'live' ? ' — live' : ' — all (incl. invalidated)');
-    const q = (document.getElementById('searchBox').value || '').trim().toUpperCase();
-    const minS = parseFloat(document.getElementById('minStrength').value) || 0;
+        (state.view === 'live' ? ' — live' : ' — all (incl. invalidated)') +
+        (isNaN(maxAge) ? '' : ` — ≤${maxAge} candles`);
     let rows = enriched().filter(s =>
         s.direction === state.direction &&
         (state.universe === 'all' || s.is_fno) &&
         (state.view === 'all' || !s.invalidated) &&
         (state.state === 'all' || (s.state || 'confirmed') === state.state) &&
+        (isNaN(maxAge) || (s.age_bars ?? 0) <= maxAge) &&
         s.symbol.includes(q) &&
         (s.strength || 0) >= minS
     );
@@ -295,6 +301,7 @@ function downloadCSV() {
 document.getElementById('downloadBtn').onclick = downloadCSV;
 document.getElementById('searchBox').oninput = render;
 document.getElementById('minStrength').oninput = render;
+document.getElementById('maxAge').oninput = render;
 document.addEventListener('keydown', e => {
     if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
         e.preventDefault(); document.getElementById('searchBox').focus();

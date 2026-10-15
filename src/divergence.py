@@ -11,7 +11,36 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from src.indicators import ema
+from src.indicators import ema, atr
+
+
+def _atr_series(df: pd.DataFrame, params: dict):
+    """ATR array if an ATR-based confirmation is enabled, else None."""
+    if not (params.get("ATR_MULT") or 0.0):
+        return None
+    if not {"high", "low", "prev_close"}.issubset(df.columns):
+        return None
+    return atr(df["high"], df["low"], df["prev_close"],
+               params.get("ATR_PERIOD", 14)).to_numpy(dtype=float)
+
+
+def _bounced(closes: np.ndarray, atr_vals, b: int, mult: float, bullish: bool) -> bool:
+    """True if the close moved ``mult`` x ATR off ``b`` *before* making a lower/higher close."""
+    if atr_vals is None or mult <= 0 or np.isnan(atr_vals[b]):
+        return False
+    need = mult * atr_vals[b]
+    for t in range(b + 1, len(closes)):
+        if bullish:
+            if closes[t] >= closes[b] + need:
+                return True
+            if closes[t] < closes[b]:      # a lower close kills the bounce
+                return False
+        else:
+            if closes[t] <= closes[b] - need:
+                return True
+            if closes[t] > closes[b]:
+                return False
+    return False
 
 
 def _find_pivots(values: np.ndarray, order: int, kind: str) -> list[int]:
@@ -87,6 +116,8 @@ def detect_divergence(df: pd.DataFrame, rsi: pd.Series, params: dict,
     ema_vals = ema(closes, params["DOWNTURN_EMA_SPAN"]).to_numpy() if gate else None
     flat = params.get("FLAT_TOL_PCT", 0.0) / 100.0   # flat top/bottom allowance
     rsi_delta = params["MIN_RSI_RISE"]
+    atr_vals = _atr_series(df, params)
+    mult = params.get("ATR_MULT", 0.0) or 0.0
 
     candidates: list[dict] = []
     for a, b in zip(turns[:-1], turns[1:]):
@@ -119,8 +150,10 @@ def detect_divergence(df: pd.DataFrame, rsi: pd.Series, params: dict,
                 if not (closes[b] > ema_vals[b] and ema_vals[b] > ema_vals[b - lb]):
                     continue
         conf = b + 1                    # the turn is known on the bar after the low
-        # settled low (order bars behind it) => confirmed; still fresh => forming
-        state = "confirmed" if (n - 1 - b) >= order else "forming"
+        # confirmed once the low has settled (order bars behind it) OR the close
+        # has moved ATR_MULT x ATR off it — whichever comes first. Else forming.
+        settled = (n - 1 - b) >= order
+        state = "confirmed" if (settled or _bounced(closes, atr_vals, b, mult, bullish)) else "forming"
         candidates.append({
             "symbol": None,
             "direction": direction,

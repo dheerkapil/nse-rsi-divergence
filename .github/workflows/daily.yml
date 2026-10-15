@@ -2,8 +2,10 @@ name: Daily RSI-divergence scan
 
 on:
   schedule:
-    # 12:30 UTC = 18:00 IST, after the bhavcopy is published
-    - cron: "30 12 * * 1-5"
+    # Retry every 30 min from ~18:00 IST until the bhavcopy lands; last attempt
+    # at midnight. 12:00-18:30 UTC == 17:30-24:00 IST. Runs are cheap no-ops
+    # until the day's file appears (the scan exits early if already processed).
+    - cron: "0,30 12-18 * * 1-5"
   workflow_dispatch: {}
 
 permissions:
@@ -41,20 +43,24 @@ jobs:
           fi
 
       - name: Run daily scan
+        id: scan
         env:
           PROFILE: ${{ vars.PROFILE || 'tight' }}
         run: python run_daily.py
 
       - name: Write run summary
+        if: steps.scan.outputs.changed == 'true'
         run: python scripts/summarize.py >> "$GITHUB_STEP_SUMMARY"
 
       - name: Save price history
+        if: steps.scan.outputs.changed == 'true'
         uses: actions/cache/save@v4
         with:
           path: data/market.db
           key: price-db-${{ github.run_id }}
 
       - name: Commit signal snapshot
+        if: steps.scan.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

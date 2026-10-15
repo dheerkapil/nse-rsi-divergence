@@ -111,7 +111,7 @@
     <div class="card">
         <div class="stat-grid">
             <div class="stat"><div class="k">Signals shown</div><div class="v" id="countV">{{ signals|length }}</div></div>
-            <div class="stat"><div class="k">Generated</div><div class="v">{{ (snap.generated_at or '—')[:16].replace('T',' ') }}</div></div>
+            <div class="stat"><div class="k">Bhavcopy date</div><div class="v">{{ snap.asof or '—' }}</div></div>
         </div>
     </div>
 

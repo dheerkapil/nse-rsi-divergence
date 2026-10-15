@@ -1,9 +1,8 @@
 """Turn raw divergences into scored, filtered signals (bullish and bearish).
 
-Two states:
-  * ``confirmed`` — the second pivot is a fully formed fractal (order bars after it).
-  * ``forming``   — the second pivot is the most extreme close in the last
-                    ``PIVOT_ORDER`` bars (provisional; published early).
+Two states, both requiring the second pivot to have *turned*:
+  * ``forming``   — the turn is fresh (the low is younger than ``PIVOT_ORDER`` bars).
+  * ``confirmed`` — the low has ``PIVOT_ORDER`` bars settled behind it.
 """
 from __future__ import annotations
 
@@ -11,7 +10,7 @@ import pandas as pd
 
 import config
 from src.indicators import rsi
-from src.divergence import detect_divergence, detect_forming
+from src.divergence import detect_divergence
 
 DIRECTIONS = ("bullish", "bearish")
 
@@ -84,10 +83,14 @@ def scan_symbol(symbol: str, df: pd.DataFrame, params: dict, fno: set | None = N
     out: list[dict] = []
     for direction in DIRECTIONS:
         cands = detect_divergence(df, r, params, direction)
-        if cands:
-            best = max(cands, key=lambda c: c["conf_idx"])
-            out.append(_finalize(best, symbol, df, params, fno, last_close, r))
-        form = detect_forming(df, r, params, direction)
+        if not cands:
+            continue
+        conf = [c for c in cands if c["state"] == "confirmed"]
+        form = [c for c in cands if c["state"] == "forming"]
+        if conf:
+            out.append(_finalize(max(conf, key=lambda c: c["conf_idx"]),
+                                 symbol, df, params, fno, last_close, r))
         if form:
-            out.append(_finalize(form[0], symbol, df, params, fno, last_close, r))
+            out.append(_finalize(max(form, key=lambda c: c["conf_idx"]),
+                                 symbol, df, params, fno, last_close, r))
     return out

@@ -57,13 +57,11 @@ FNO_FILE = os.getenv("FNO_FILE", str(PROJECT_ROOT / "config" / "fno_stocks.json"
 # RSI
 # --------------------------------------------------------------------------
 RSI_PERIOD = int(os.getenv("RSI_PERIOD", "14"))
-ATR_PERIOD = int(os.getenv("ATR_PERIOD", "14"))
-ATR_MULT = float(os.getenv("ATR_MULT", "1.0"))   # confirm 2nd pivot on a k*ATR bounce (closes)
 
 # --------------------------------------------------------------------------
 # Pattern detection (structural — same across profiles)
 # --------------------------------------------------------------------------
-PIVOT_ORDER = int(os.getenv("PIVOT_ORDER", "5"))            # fractal half-window (bars)
+PIVOT_ORDER = int(os.getenv("PIVOT_ORDER", "5"))            # bars that settle a turned low
 PIVOT_BASIS = os.getenv("PIVOT_BASIS", "close").lower()     # close | low  (price series for pivots)
 FLAT_TOL_PCT = float(os.getenv("FLAT_TOL_PCT", "0.5"))     # flat top/bottom allowance (%)
 MIN_PIVOT_SEPARATION = int(os.getenv("MIN_PIVOT_SEPARATION", "5"))  # bars between lows
@@ -113,8 +111,6 @@ def active_params() -> dict:
     params.update(
         PROFILE=PROFILE,
         RSI_PERIOD=RSI_PERIOD,
-        ATR_PERIOD=ATR_PERIOD,
-        ATR_MULT=ATR_MULT,
         PIVOT_ORDER=PIVOT_ORDER,
         PIVOT_BASIS=PIVOT_BASIS,
         FLAT_TOL_PCT=FLAT_TOL_PCT,

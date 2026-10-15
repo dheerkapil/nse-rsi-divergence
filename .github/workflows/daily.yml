@@ -22,6 +22,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Refresh F&O universe
+        run: python scripts/refresh_fno.py
+
       - name: Restore price history
         uses: actions/cache/restore@v4
         with:
@@ -55,6 +58,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add output/daily_signals.json
+          git add output/daily_signals.json config/fno_stocks.json
           git diff --cached --quiet || git commit -m "chore: daily signals $(date -u +%F)"
           git push

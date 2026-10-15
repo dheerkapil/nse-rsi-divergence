@@ -71,7 +71,7 @@ def detect_divergence(df: pd.DataFrame, rsi: pd.Series, params: dict,
     gate = params["DOWNTURN_GATE"] if bullish else params.get("UPTREND_GATE", params["DOWNTURN_GATE"])
     ema_vals = ema(closes, params["DOWNTURN_EMA_SPAN"]).to_numpy() if gate else None
 
-    move = params["MIN_PRICE_DROP_PCT"] / 100.0
+    flat = params.get("FLAT_TOL_PCT", 0.0) / 100.0   # flat top/bottom allowance
     rsi_delta = params["MIN_RSI_RISE"]
 
     candidates: list[dict] = []
@@ -81,14 +81,14 @@ def detect_divergence(df: pd.DataFrame, rsi: pd.Series, params: dict,
         if np.isnan(r[a]) or np.isnan(r[b]):
             continue
         if bullish:
-            if not (series[b] < series[a] * (1.0 - move)):   # lower low
+            if not (series[b] <= series[a] * (1.0 + flat)):  # lower low or flat
                 continue
             if not (r[b] > r[a] + rsi_delta):                # higher RSI low
                 continue
             if not (r[b] < params["RSI_CEILING"]):
                 continue
         else:
-            if not (series[b] > series[a] * (1.0 + move)):   # higher high
+            if not (series[b] >= series[a] * (1.0 - flat)):  # higher high or flat
                 continue
             if not (r[b] < r[a] - rsi_delta):                # lower RSI high
                 continue

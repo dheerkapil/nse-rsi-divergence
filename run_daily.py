@@ -22,7 +22,7 @@ import requests  # noqa: E402
 import config  # noqa: E402
 from src.downloader import fetch_bhavcopy  # noqa: E402
 from src.database import (  # noqa: E402
-    init_db, store_prices, get_symbols, get_price_history,
+    init_db, store_prices, prune_prices, get_symbols, get_price_history,
     store_signals, set_meta, get_last_price_date,
 )
 from src.signals import scan_symbol  # noqa: E402
@@ -79,6 +79,25 @@ def write_snapshot(signals: list[dict], params: dict, asof: str) -> Path:
     return out
 
 
+def write_csv(signals: list[dict]) -> Path:
+    """Write the snapshot as a flat CSV (handy for scripting / downloads)."""
+    import csv
+    cols = ["symbol", "direction", "signal_date", "price", "last_price", "pct_since",
+            "rsi", "pivot1_date", "pivot1_price", "pivot1_rsi",
+            "pivot2_date", "pivot2_price", "pivot2_rsi",
+            "strength", "age_bars", "is_fno", "invalidated"]
+    out = config.OUTPUT_DIR / "daily_signals.csv"
+    with open(out, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
+        w.writeheader()
+        for s in signals:
+            row = dict(s)
+            row["pct_since"] = (round((s["last_price"] - s["price"]) / s["price"] * 100, 2)
+                                if s.get("price") else "")
+            w.writerow(row)
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", help="target date YYYY-MM-DD (default: today IST)")
@@ -98,8 +117,10 @@ def main() -> int:
             print(f"[run_daily] No bhavcopy available at/behind {asof}. Aborting.")
             return 1
         n = store_prices(df)
+        pruned = prune_prices(config.RETENTION_BARS)
         asof = got.isoformat()
-        print(f"[run_daily] Stored {n} EQ rows for {asof} (profile={params['PROFILE']})")
+        print(f"[run_daily] Stored {n} EQ rows for {asof}; pruned {pruned} old row(s) "
+              f"(window={config.RETENTION_BARS} bars/symbol, profile={params['PROFILE']})")
 
     fno = load_fno()
     signals = scan_all(params, fno)
@@ -107,6 +128,7 @@ def main() -> int:
     set_meta("last_run", datetime.now(IST).isoformat())
     set_meta("last_price_date", get_last_price_date() or "")
     snap = write_snapshot(signals, params, asof)
+    write_csv(signals)
 
     print(f"[run_daily] {len(signals)} active signal(s); snapshot -> {snap}")
     for s in signals[:15]:

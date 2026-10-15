@@ -90,6 +90,29 @@ def store_prices(df: pd.DataFrame) -> int:
     return len(rows)
 
 
+def prune_prices(keep: int) -> int:
+    """Keep only the most recent ``keep`` bars per symbol (rolling window).
+
+    Returns the number of rows deleted. Irreversible — old bars would need a
+    re-backfill to recover.
+    """
+    conn = get_conn()
+    symbols = [r[0] for r in conn.execute("SELECT DISTINCT symbol FROM prices")]
+    total = 0
+    for s in symbols:
+        row = conn.execute(
+            "SELECT date FROM prices WHERE symbol = ? ORDER BY date DESC LIMIT 1 OFFSET ?",
+            (s, keep - 1),
+        ).fetchone()
+        if row:
+            total += conn.execute(
+                "DELETE FROM prices WHERE symbol = ? AND date < ?", (s, row[0])
+            ).rowcount
+    conn.commit()
+    conn.close()
+    return total
+
+
 def get_price_history(symbol: str, limit: int | None = None) -> pd.DataFrame:
     conn = get_conn()
     q = "SELECT date, open, high, low, close, prev_close, volume, turnover_lacs FROM prices WHERE symbol = ? ORDER BY date"

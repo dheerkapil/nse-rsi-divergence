@@ -48,6 +48,7 @@ REQUEST_RETRIES = 3
 MIN_PRICE = float(os.getenv("MIN_PRICE", "20"))                      # ignore penny stocks
 MIN_AVG_TURNOVER_LACS = float(os.getenv("MIN_AVG_TURNOVER", "100"))  # liquidity floor
 MIN_HISTORY_BARS = int(os.getenv("MIN_HISTORY_BARS", "60"))          # enough bars for RSI
+RETENTION_BARS = int(os.getenv("RETENTION_BARS", "330"))             # rolling price window per symbol
 
 # F&O universe (NSE symbols with futures & options)
 FNO_FILE = os.getenv("FNO_FILE", str(PROJECT_ROOT / "config" / "fno_stocks.json"))
@@ -62,6 +63,7 @@ RSI_PERIOD = int(os.getenv("RSI_PERIOD", "14"))
 # --------------------------------------------------------------------------
 PIVOT_ORDER = int(os.getenv("PIVOT_ORDER", "5"))            # fractal half-window (bars)
 PIVOT_BASIS = os.getenv("PIVOT_BASIS", "close").lower()     # close | low  (price series for pivots)
+FLAT_TOL_PCT = float(os.getenv("FLAT_TOL_PCT", "0.5"))     # flat top/bottom allowance (%)
 MIN_PIVOT_SEPARATION = int(os.getenv("MIN_PIVOT_SEPARATION", "5"))  # bars between lows
 LOOKBACK_BARS = int(os.getenv("LOOKBACK_BARS", "120"))      # scan window for pivots
 MAX_SIGNAL_AGE_DAYS = int(os.getenv("MAX_SIGNAL_AGE_DAYS", "10"))   # freshness window
@@ -91,8 +93,8 @@ PROFILES = {
         "UPTREND_GATE": False,      # bearish: require a preceding advance
     },
     "tight": {
-        "MIN_RSI_RISE": 5.0,
-        "MIN_PRICE_DROP_PCT": 2.0,
+        "MIN_RSI_RISE": 1.0,
+        "MIN_PRICE_DROP_PCT": 0.0,
         "RSI_CEILING": 35.0,
         "RSI_FLOOR": 65.0,
         "DOWNTURN_GATE": True,
@@ -111,6 +113,7 @@ def active_params() -> dict:
         RSI_PERIOD=RSI_PERIOD,
         PIVOT_ORDER=PIVOT_ORDER,
         PIVOT_BASIS=PIVOT_BASIS,
+        FLAT_TOL_PCT=FLAT_TOL_PCT,
         MIN_PIVOT_SEPARATION=MIN_PIVOT_SEPARATION,
         LOOKBACK_BARS=LOOKBACK_BARS,
         MAX_SIGNAL_AGE_DAYS=MAX_SIGNAL_AGE_DAYS,

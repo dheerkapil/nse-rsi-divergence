@@ -77,10 +77,13 @@
         table.table tbody td { border-bottom:1px solid var(--border-light); padding:.5rem .6rem;
             vertical-align:middle; white-space:nowrap; }
         table.table tbody tr:hover { background:var(--row-hover); }
+        tr.invalid { opacity:.55; }
         .sym { font-weight:600; }
         .symlink { color:var(--primary); text-decoration:none; }
         .symlink:hover { text-decoration:underline; }
         .fno-tag { font-size:.6rem; font-weight:700; color:var(--warning); border:1px solid var(--warning);
+            border-radius:4px; padding:0 3px; margin-left:5px; vertical-align:middle; }
+        .inv-tag { font-size:.6rem; font-weight:700; color:var(--danger); border:1px solid var(--danger);
             border-radius:4px; padding:0 3px; margin-left:5px; vertical-align:middle; }
         .num { text-align:right; font-variant-numeric:tabular-nums; }
         .pos { color:var(--success); } .neg { color:var(--danger); }
@@ -105,7 +108,7 @@
 
     <div class="card">
         <div class="stat-grid">
-            <div class="stat"><div class="k">Active signals</div><div class="v" id="countV">{{ signals|length }}</div></div>
+            <div class="stat"><div class="k">Signals shown</div><div class="v" id="countV">{{ signals|length }}</div></div>
             <div class="stat"><div class="k">Generated</div><div class="v">{{ (snap.generated_at or '—')[:16].replace('T',' ') }}</div></div>
         </div>
     </div>
@@ -120,10 +123,14 @@
                 <button data-d="bullish" class="active">Bullish</button>
                 <button data-d="bearish">Bearish</button>
             </span></div>
-            <input type="text" id="searchBox" class="form-control-sm" style="flex:1;min-width:160px;"
+            <div><span class="seg-label">View</span><span class="seg" id="viewSeg">
+                <button data-v="live" class="active">Live</button>
+                <button data-v="all">All</button>
+            </span></div>
+            <input type="text" id="searchBox" class="form-control-sm" style="flex:1;min-width:150px;"
                    placeholder="Search symbol (press / to focus)" autocomplete="off">
             <label class="text-muted" style="font-size:.8rem;">Min strength</label>
-            <input type="number" id="minStrength" class="form-control-sm" style="width:80px;"
+            <input type="number" id="minStrength" class="form-control-sm" style="width:78px;"
                    value="0" min="0" max="100" step="5">
         </div>
     </div>
@@ -164,7 +171,7 @@ toggle.onclick = () => {
     toggle.textContent = root.classList.contains('dark') ? '☀️' : '🌙';
 };
 
-const state = { universe: 'all', direction: 'bullish' };
+const state = { universe: 'all', direction: 'bullish', view: 'live' };
 
 const fmt = (n, d=2) => (n === null || n === undefined || isNaN(n)) ? '—' : Number(n).toFixed(d);
 const pivot = (dt, p, r) => `<span class="pivot">${dt||'—'} · ₹${fmt(p)} · RSI ${fmt(r,1)}</span>`;
@@ -173,7 +180,7 @@ const badge = s => {
     return `<span class="badge-strength ${cls}">${fmt(s,0)}</span>`;
 };
 
-let sortKey = 'strength', sortDir = -1;
+let sortKey = 'signal_date', sortDir = -1;   // recency first by default
 function enriched() {
     return SIGNALS.map(s => {
         const pct = (s.last_price && s.price) ? (s.last_price - s.price) / s.price * 100 : null;
@@ -182,12 +189,15 @@ function enriched() {
 }
 function render() {
     document.getElementById('tableTitle').textContent =
-        `📋 Signals — regular ${state.direction} divergence` + (state.universe === 'fno' ? ' (F&O)' : '');
+        `📋 Signals — regular ${state.direction} divergence` +
+        (state.universe === 'fno' ? ' (F&O)' : '') +
+        (state.view === 'live' ? ' — live' : ' — all (incl. invalidated)');
     const q = (document.getElementById('searchBox').value || '').trim().toUpperCase();
     const minS = parseFloat(document.getElementById('minStrength').value) || 0;
     let rows = enriched().filter(s =>
         s.direction === state.direction &&
         (state.universe === 'all' || s.is_fno) &&
+        (state.view === 'all' || !s.invalidated) &&
         s.symbol.includes(q) &&
         (s.strength || 0) >= minS
     );
@@ -202,9 +212,10 @@ function render() {
         const pct = s.pct_since;
         const pctCls = pct === null ? '' : (pct >= 0 ? 'pos' : 'neg');
         const pctTxt = pct === null ? '—' : (pct >= 0 ? '+' : '') + fmt(pct) + '%';
-        const tag = s.is_fno ? '<span class="fno-tag">F&amp;O</span>' : '';
-        return `<tr>
-            <td class="sym"><a class="symlink" href="https://www.tradingview.com/chart/?symbol=NSE:${s.symbol}" target="_blank" rel="noopener">${s.symbol}</a>${tag}</td>
+        const tags = (s.is_fno ? '<span class="fno-tag">F&amp;O</span>' : '') +
+                     (s.invalidated ? '<span class="inv-tag">invalid</span>' : '');
+        return `<tr class="${s.invalidated ? 'invalid' : ''}">
+            <td class="sym"><a class="symlink" href="https://www.tradingview.com/chart/?symbol=NSE:${s.symbol}" target="_blank" rel="noopener">${s.symbol}</a>${tags}</td>
             <td>${s.signal_date||'—'}</td>
             <td class="num">₹${fmt(s.price)}</td>
             <td class="num">₹${fmt(s.last_price)}</td>
@@ -229,6 +240,13 @@ document.querySelectorAll('#directionSeg button').forEach(b => {
     b.onclick = () => {
         state.direction = b.dataset.d;
         document.querySelectorAll('#directionSeg button').forEach(x => x.classList.toggle('active', x === b));
+        render();
+    };
+});
+document.querySelectorAll('#viewSeg button').forEach(b => {
+    b.onclick = () => {
+        state.view = b.dataset.v;
+        document.querySelectorAll('#viewSeg button').forEach(x => x.classList.toggle('active', x === b));
         render();
     };
 });

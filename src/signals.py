@@ -38,7 +38,7 @@ def score(cand: dict, params: dict) -> float:
 
 
 def _finalize(cand: dict, symbol: str, df: pd.DataFrame, params: dict,
-              fno: set | None, last_close: float) -> dict:
+              fno: set | None, last_close: float, r: pd.Series) -> dict:
     cand["symbol"] = symbol
     cand["strength"] = score(cand, params)
     cand["profile"] = params["PROFILE"]
@@ -47,13 +47,16 @@ def _finalize(cand: dict, symbol: str, df: pd.DataFrame, params: dict,
     cand["age_bars"] = int(len(df) - 1 - cand["conf_idx"])
     cand["is_fno"] = bool(fno and symbol in fno)
     cand.setdefault("state", "confirmed")
-    # invalidated if price closes beyond the level that defined the setup,
-    # on any bar after the confirmation date (closes only)
-    after = df["close"].iloc[cand["conf_idx"] + 1:]
+    # invalidated if EITHER price OR RSI closes beyond the level set at the second
+    # pivot, on any bar after it (closes only). Either break kills the divergence.
+    after_c = df["close"].iloc[cand["conf_idx"] + 1:]
+    after_r = r.iloc[cand["conf_idx"] + 1:]
     if cand["direction"] == "bullish":
-        cand["invalidated"] = bool((after < cand["pivot2_price"]).any())
+        cand["invalidated"] = bool((after_c < cand["pivot2_price"]).any()
+                                   or (after_r < cand["pivot2_rsi"]).any())
     else:
-        cand["invalidated"] = bool((after > cand["pivot2_price"]).any())
+        cand["invalidated"] = bool((after_c > cand["pivot2_price"]).any()
+                                   or (after_r > cand["pivot2_rsi"]).any())
     return cand
 
 
@@ -83,8 +86,8 @@ def scan_symbol(symbol: str, df: pd.DataFrame, params: dict, fno: set | None = N
         cands = detect_divergence(df, r, params, direction)
         if cands:
             best = max(cands, key=lambda c: c["conf_idx"])
-            out.append(_finalize(best, symbol, df, params, fno, last_close))
+            out.append(_finalize(best, symbol, df, params, fno, last_close, r))
         form = detect_forming(df, r, params, direction)
         if form:
-            out.append(_finalize(form[0], symbol, df, params, fno, last_close))
+            out.append(_finalize(form[0], symbol, df, params, fno, last_close, r))
     return out

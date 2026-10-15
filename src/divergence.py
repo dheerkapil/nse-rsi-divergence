@@ -148,9 +148,10 @@ def detect_forming(df: pd.DataFrame, rsi: pd.Series, params: dict,
     """Provisional divergence, published *before* the second pivot is confirmed.
 
     The second pivot is the most extreme close in the last ``PIVOT_ORDER`` bars
-    (knowable now, no look-ahead); it is paired with the last *confirmed* fractal
-    pivot. Returns at most one candidate. Promoted to confirmed once the close
-    has moved ``ATR_MULT`` x ATR off it (whichever comes first vs the fractal).
+    (knowable now, no look-ahead); it is paired with the **previous swing low**
+    (the most extreme close in the ``order`` bars ending ``MIN_PIVOT_SEPARATION``
+    bars before it). Returns at most one candidate. Promoted to confirmed once the
+    close has moved ``ATR_MULT`` x ATR off it.
     """
     order = params["PIVOT_ORDER"]
     min_sep = params["MIN_PIVOT_SEPARATION"]
@@ -172,11 +173,16 @@ def detect_forming(df: pd.DataFrame, rsi: pd.Series, params: dict,
     win = series[n - order:]
     p = (n - order) + (int(np.argmin(win)) if bullish else int(np.argmax(win)))
 
-    piv = find_pivot_lows(series, order) if bullish else find_pivot_highs(series, order)
-    prev = [x for x in piv if x <= p - order]
-    if not prev:
+    # reference = the PREVIOUS swing low: the most extreme close in the `order`
+    # bars ending `min_sep` bars before p. Using the previous swing low (not the
+    # last confirmed fractal) avoids skipping back past recent lows when they
+    # spoil each other in a decline.
+    hi = p - min_sep + 1
+    lo = hi - order
+    if lo < 0:
         return []
-    a = prev[-1]
+    ref = series[lo:hi]
+    a = lo + (int(np.argmin(ref)) if bullish else int(np.argmax(ref)))
     if p - a < min_sep or np.isnan(r[a]) or np.isnan(r[p]):
         return []
 

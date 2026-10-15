@@ -57,7 +57,13 @@
         .stat-grid { display:flex; gap:24px; flex-wrap:wrap; }
         .stat .k { font-size:.7rem; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); }
         .stat .v { font-size:1.15rem; font-weight:500; }
-        .toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .toolbar { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+        .seg-label { font-size:.68rem; text-transform:uppercase; letter-spacing:.4px;
+            color:var(--text-muted); margin-right:6px; }
+        .seg { display:inline-flex; background:var(--surface-2); border-radius:999px; padding:3px; gap:2px; }
+        .seg button { border:none; background:transparent; color:var(--text-muted); font-size:.8rem;
+            font-weight:500; padding:.3rem .85rem; border-radius:999px; cursor:pointer; }
+        .seg button.active { background:var(--primary-fill); color:var(--primary-text); }
         .form-control-sm { font-size:.85rem; padding:.45rem .7rem; background:var(--input-bg);
             color:var(--text); border:1px solid var(--border); border-radius:8px; }
         .form-control-sm:focus { border-color:var(--primary); box-shadow:var(--focus-ring); outline:none; }
@@ -74,6 +80,8 @@
         .sym { font-weight:600; }
         .symlink { color:var(--primary); text-decoration:none; }
         .symlink:hover { text-decoration:underline; }
+        .fno-tag { font-size:.6rem; font-weight:700; color:var(--warning); border:1px solid var(--warning);
+            border-radius:4px; padding:0 3px; margin-left:5px; vertical-align:middle; }
         .num { text-align:right; font-variant-numeric:tabular-nums; }
         .pos { color:var(--success); } .neg { color:var(--danger); }
         .pivot { color:var(--text-muted); font-size:.78rem; }
@@ -97,26 +105,31 @@
 
     <div class="card">
         <div class="stat-grid">
-            <div class="stat"><div class="k">Active signals</div><div class="v">{{ signals|length }}</div></div>
-            <div class="stat"><div class="k">Profile</div><div class="v">{{ snap.profile or '—' }}</div></div>
-            <div class="stat"><div class="k">Data as of</div><div class="v">{{ snap.asof or '—' }}</div></div>
-            <div class="stat"><div class="k">Generated</div><div class="v">{{ (snap.generated_at or '—')[:19].replace('T',' ') }}</div></div>
+            <div class="stat"><div class="k">Active signals</div><div class="v" id="countV">{{ signals|length }}</div></div>
+            <div class="stat"><div class="k">Generated</div><div class="v">{{ (snap.generated_at or '—')[:16].replace('T',' ') }}</div></div>
         </div>
     </div>
 
     <div class="card" style="padding:10px 14px;">
         <div class="toolbar">
-            <span style="font-size:.85rem;font-weight:500;color:var(--text-muted);">🔎</span>
-            <input type="text" id="searchBox" class="form-control-sm" style="flex:1;min-width:200px;"
+            <div><span class="seg-label">Universe</span><span class="seg" id="universeSeg">
+                <button data-u="all" class="active">All</button>
+                <button data-u="fno">F&amp;O</button>
+            </span></div>
+            <div><span class="seg-label">Direction</span><span class="seg" id="directionSeg">
+                <button data-d="bullish" class="active">Bullish</button>
+                <button data-d="bearish">Bearish</button>
+            </span></div>
+            <input type="text" id="searchBox" class="form-control-sm" style="flex:1;min-width:160px;"
                    placeholder="Search symbol (press / to focus)" autocomplete="off">
             <label class="text-muted" style="font-size:.8rem;">Min strength</label>
-            <input type="number" id="minStrength" class="form-control-sm" style="width:90px;"
+            <input type="number" id="minStrength" class="form-control-sm" style="width:80px;"
                    value="0" min="0" max="100" step="5">
         </div>
     </div>
 
     <div class="card" style="padding:10px 4px;">
-        <h5 style="padding-left:8px;">📋 Buy signals — regular bullish divergence</h5>
+        <h5 style="padding-left:8px;" id="tableTitle">📋 Signals — regular bullish divergence</h5>
         <div class="table-scroll">
             <table class="table table-hover" id="sigTable">
                 <thead>
@@ -151,6 +164,8 @@ toggle.onclick = () => {
     toggle.textContent = root.classList.contains('dark') ? '☀️' : '🌙';
 };
 
+const state = { universe: 'all', direction: 'bullish' };
+
 const fmt = (n, d=2) => (n === null || n === undefined || isNaN(n)) ? '—' : Number(n).toFixed(d);
 const pivot = (dt, p, r) => `<span class="pivot">${dt||'—'} · ₹${fmt(p)} · RSI ${fmt(r,1)}</span>`;
 const badge = s => {
@@ -166,21 +181,30 @@ function enriched() {
     });
 }
 function render() {
+    document.getElementById('tableTitle').textContent =
+        `📋 Signals — regular ${state.direction} divergence` + (state.universe === 'fno' ? ' (F&O)' : '');
     const q = (document.getElementById('searchBox').value || '').trim().toUpperCase();
     const minS = parseFloat(document.getElementById('minStrength').value) || 0;
-    let rows = enriched().filter(s => s.symbol.includes(q) && (s.strength || 0) >= minS);
+    let rows = enriched().filter(s =>
+        s.direction === state.direction &&
+        (state.universe === 'all' || s.is_fno) &&
+        s.symbol.includes(q) &&
+        (s.strength || 0) >= minS
+    );
     rows.sort((a, b) => {
         const x = a[sortKey], y = b[sortKey];
         if (x === y) return 0;
         return (x > y ? 1 : -1) * sortDir;
     });
+    document.getElementById('countV').textContent = rows.length;
     const body = document.getElementById('sigBody');
     body.innerHTML = rows.map(s => {
         const pct = s.pct_since;
         const pctCls = pct === null ? '' : (pct >= 0 ? 'pos' : 'neg');
         const pctTxt = pct === null ? '—' : (pct >= 0 ? '+' : '') + fmt(pct) + '%';
+        const tag = s.is_fno ? '<span class="fno-tag">F&amp;O</span>' : '';
         return `<tr>
-            <td class="sym"><a class="symlink" href="https://www.tradingview.com/chart/?symbol=NSE:${s.symbol}" target="_blank" rel="noopener">${s.symbol}</a></td>
+            <td class="sym"><a class="symlink" href="https://www.tradingview.com/chart/?symbol=NSE:${s.symbol}" target="_blank" rel="noopener">${s.symbol}</a>${tag}</td>
             <td>${s.signal_date||'—'}</td>
             <td class="num">₹${fmt(s.price)}</td>
             <td class="num">₹${fmt(s.last_price)}</td>
@@ -194,6 +218,20 @@ function render() {
     }).join('');
     document.getElementById('empty').style.display = rows.length ? 'none' : 'block';
 }
+document.querySelectorAll('#universeSeg button').forEach(b => {
+    b.onclick = () => {
+        state.universe = b.dataset.u;
+        document.querySelectorAll('#universeSeg button').forEach(x => x.classList.toggle('active', x === b));
+        render();
+    };
+});
+document.querySelectorAll('#directionSeg button').forEach(b => {
+    b.onclick = () => {
+        state.direction = b.dataset.d;
+        document.querySelectorAll('#directionSeg button').forEach(x => x.classList.toggle('active', x === b));
+        render();
+    };
+});
 document.querySelectorAll('#sigTable thead th[data-key]').forEach(th => {
     th.onclick = () => {
         const k = th.dataset.key;

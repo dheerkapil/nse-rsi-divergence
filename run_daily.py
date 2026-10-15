@@ -111,6 +111,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", help="target date YYYY-MM-DD (default: today IST)")
     ap.add_argument("--no-fetch", action="store_true", help="skip download, rescan DB")
+    ap.add_argument("--force", action="store_true", help="rescan even if the bhavcopy is already processed")
     args = ap.parse_args()
 
     init_db()
@@ -136,7 +137,7 @@ def main() -> int:
             print(f"[run_daily] No bhavcopy available at/behind {asof}; will retry.")
             _gh_out("changed", "false")
             return 0
-        if got.isoformat() == prev_asof:
+        if got.isoformat() == prev_asof and not args.force:
             print(f"[run_daily] bhavcopy {got.isoformat()} already processed; nothing new.")
             _gh_out("changed", "false")
             return 0

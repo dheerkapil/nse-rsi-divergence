@@ -46,7 +46,12 @@ jobs:
         id: scan
         env:
           PROFILE: ${{ vars.PROFILE || 'tight' }}
-        run: python run_daily.py
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python run_daily.py --force
+          else
+            python run_daily.py
+          fi
 
       - name: Write run summary
         if: steps.scan.outputs.changed == 'true'

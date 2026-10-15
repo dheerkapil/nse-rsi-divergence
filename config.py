@@ -65,7 +65,7 @@ ATR_MULT = float(os.getenv("ATR_MULT", "1.0"))   # confirm a turned low on a k*A
 # --------------------------------------------------------------------------
 PIVOT_ORDER = int(os.getenv("PIVOT_ORDER", "5"))            # bars that settle a turned low
 PIVOT_BASIS = os.getenv("PIVOT_BASIS", "close").lower()     # close | low  (price series for pivots)
-FLAT_TOL_PCT = float(os.getenv("FLAT_TOL_PCT", "0.5"))     # flat top/bottom allowance (%)
+FLAT_TOL_PCT = float(os.getenv("FLAT_TOL_PCT", "0.2"))     # flat top/bottom allowance (%)
 MIN_PIVOT_SEPARATION = int(os.getenv("MIN_PIVOT_SEPARATION", "5"))  # bars between lows
 LOOKBACK_BARS = int(os.getenv("LOOKBACK_BARS", "120"))      # scan window for pivots
 MAX_SIGNAL_AGE_DAYS = int(os.getenv("MAX_SIGNAL_AGE_DAYS", "10"))   # freshness window

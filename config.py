@@ -49,6 +49,9 @@ MIN_PRICE = float(os.getenv("MIN_PRICE", "20"))                      # ignore pe
 MIN_AVG_TURNOVER_LACS = float(os.getenv("MIN_AVG_TURNOVER", "100"))  # liquidity floor
 MIN_HISTORY_BARS = int(os.getenv("MIN_HISTORY_BARS", "60"))          # enough bars for RSI
 
+# F&O universe (NSE symbols with futures & options)
+FNO_FILE = os.getenv("FNO_FILE", str(PROJECT_ROOT / "config" / "fno_stocks.json"))
+
 # --------------------------------------------------------------------------
 # RSI
 # --------------------------------------------------------------------------
@@ -58,6 +61,7 @@ RSI_PERIOD = int(os.getenv("RSI_PERIOD", "14"))
 # Pattern detection (structural — same across profiles)
 # --------------------------------------------------------------------------
 PIVOT_ORDER = int(os.getenv("PIVOT_ORDER", "5"))            # fractal half-window (bars)
+PIVOT_BASIS = os.getenv("PIVOT_BASIS", "close").lower()     # close | low  (price series for pivots)
 MIN_PIVOT_SEPARATION = int(os.getenv("MIN_PIVOT_SEPARATION", "5"))  # bars between lows
 LOOKBACK_BARS = int(os.getenv("LOOKBACK_BARS", "120"))      # scan window for pivots
 MAX_SIGNAL_AGE_DAYS = int(os.getenv("MAX_SIGNAL_AGE_DAYS", "10"))   # freshness window
@@ -79,16 +83,20 @@ PROFILE = os.getenv("PROFILE", "tight").lower()             # loose | tight
 
 PROFILES = {
     "loose": {
-        "MIN_RSI_RISE": 1.0,        # RSI must rise this much between the lows
-        "MIN_PRICE_DROP_PCT": 0.0,  # depth of the lower price low (%)
-        "RSI_CEILING": 55.0,        # 2nd-pivot RSI must be below this
-        "DOWNTURN_GATE": False,
+        "MIN_RSI_RISE": 1.0,        # bullish: RSI must rise this much between the lows
+        "MIN_PRICE_DROP_PCT": 0.0,  # bullish: depth of the lower price low (%)
+        "RSI_CEILING": 55.0,        # bullish: 2nd-pivot RSI must be below this
+        "RSI_FLOOR": 45.0,          # bearish: 2nd-pivot RSI must be above this
+        "DOWNTURN_GATE": False,     # bullish: require a preceding decline
+        "UPTREND_GATE": False,      # bearish: require a preceding advance
     },
     "tight": {
         "MIN_RSI_RISE": 5.0,
         "MIN_PRICE_DROP_PCT": 2.0,
         "RSI_CEILING": 35.0,
+        "RSI_FLOOR": 65.0,
         "DOWNTURN_GATE": True,
+        "UPTREND_GATE": True,
     },
 }
 
@@ -102,6 +110,7 @@ def active_params() -> dict:
         PROFILE=PROFILE,
         RSI_PERIOD=RSI_PERIOD,
         PIVOT_ORDER=PIVOT_ORDER,
+        PIVOT_BASIS=PIVOT_BASIS,
         MIN_PIVOT_SEPARATION=MIN_PIVOT_SEPARATION,
         LOOKBACK_BARS=LOOKBACK_BARS,
         MAX_SIGNAL_AGE_DAYS=MAX_SIGNAL_AGE_DAYS,

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-15T22:17:27.358808+05:30",
+  "generated_at": "2026-10-15T22:21:27.360838+05:30",
   "profile": "tight",
   "asof": "2026-10-15",
   "count": 446,
@@ -30,7 +30,7 @@
     {
       "symbol": "FAIRCHEMOR",
       "direction": "bearish",
-      "state": "forming",
+      "state": "confirmed",
       "signal_date": "2026-10-14",
       "price": 792.55,
       "rsi": 71.5799366164292,
@@ -168,7 +168,7 @@
     {
       "symbol": "RELIANCE",
       "direction": "bullish",
-      "state": "forming",
+      "state": "confirmed",
       "signal_date": "2026-10-13",
       "price": 1166.7,
       "rsi": 36.04417377895977,
@@ -191,7 +191,7 @@
     {
       "symbol": "GLOBUSSPR",
       "direction": "bullish",
-      "state": "forming",
+      "state": "confirmed",
       "signal_date": "2026-10-13",
       "price": 798.1,
       "rsi": 41.009772957007534,
@@ -214,7 +214,7 @@
     {
       "symbol": "GOCLCORP",
       "direction": "bullish",
-      "state": "forming",
+      "state": "confirmed",
       "signal_date": "2026-10-13",
       "price": 354.5,
       "rsi": 37.599468111153264,
@@ -283,7 +283,7 @@
     {
       "symbol": "EIEL",
       "direction": "bullish",
-      "state": "forming",
+      "state": "confirmed",
       "signal_date": "2026-10-13",
       "price": 183.34,
       "rsi": 40.278110172221915,

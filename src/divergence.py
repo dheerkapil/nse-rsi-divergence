@@ -8,7 +8,17 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from src.indicators import ema
+from src.indicators import ema, atr
+
+
+def _atr_series(df: pd.DataFrame, params: dict):
+    """ATR array if an ATR-based confirmation is enabled, else None."""
+    if not (params.get("ATR_MULT") or 0.0):
+        return None
+    if not {"high", "low", "prev_close"}.issubset(df.columns):
+        return None
+    return atr(df["high"], df["low"], df["prev_close"],
+               params.get("ATR_PERIOD", 14)).to_numpy(dtype=float)
 
 
 def _find_pivots(values: np.ndarray, order: int, kind: str) -> list[int]:
@@ -73,6 +83,8 @@ def detect_divergence(df: pd.DataFrame, rsi: pd.Series, params: dict,
 
     flat = params.get("FLAT_TOL_PCT", 0.0) / 100.0   # flat top/bottom allowance
     rsi_delta = params["MIN_RSI_RISE"]
+    atr_vals = _atr_series(df, params)
+    mult = params.get("ATR_MULT", 0.0) or 0.0
 
     candidates: list[dict] = []
     for a, b in zip(pivots[:-1], pivots[1:]):
@@ -105,6 +117,14 @@ def detect_divergence(df: pd.DataFrame, rsi: pd.Series, params: dict,
                 if not (closes[b] > ema_vals[b] and ema_vals[b] > ema_vals[b - lb]):
                     continue
         conf = b + order
+        # whichever first: an ATR-sized bounce off the pivot can confirm earlier
+        if atr_vals is not None and not np.isnan(atr_vals[b]):
+            need = mult * atr_vals[b]
+            for t in range(b + 1, min(b + order, n)):
+                hit = (closes[t] >= series[b] + need) if bullish else (closes[t] <= series[b] - need)
+                if hit:
+                    conf = t
+                    break
         if conf >= n:
             continue
 
@@ -129,8 +149,8 @@ def detect_forming(df: pd.DataFrame, rsi: pd.Series, params: dict,
 
     The second pivot is the most extreme close in the last ``PIVOT_ORDER`` bars
     (knowable now, no look-ahead); it is paired with the last *confirmed* fractal
-    pivot. Returns at most one candidate. Superseded once that low/high becomes a
-    proper fractal, at which point the confirmed detector takes over.
+    pivot. Returns at most one candidate. Promoted to confirmed once the close
+    has moved ``ATR_MULT`` x ATR off it (whichever comes first vs the fractal).
     """
     order = params["PIVOT_ORDER"]
     min_sep = params["MIN_PIVOT_SEPARATION"]
@@ -192,15 +212,28 @@ def detect_forming(df: pd.DataFrame, rsi: pd.Series, params: dict,
             if not (closes[p] > ema_vals[p] and ema_vals[p] > ema_vals[p - lb]):
                 return []
 
+    # whichever first: promote to confirmed once the close has moved k*ATR off
+    # the provisional pivot (the fractal cannot apply to a provisional low).
+    atr_vals = _atr_series(df, params)
+    mult = params.get("ATR_MULT", 0.0) or 0.0
+    state, conf = "forming", p
+    if atr_vals is not None and not np.isnan(atr_vals[p]):
+        need = mult * atr_vals[p]
+        for t in range(p + 1, n):
+            hit = (closes[t] >= series[p] + need) if bullish else (closes[t] <= series[p] - need)
+            if hit:
+                state, conf = "confirmed", t
+                break
+
     return [{
         "symbol": None,
         "direction": direction,
-        "state": "forming",
-        "signal_date": str(dates[p]),
-        "price": float(closes[p]),
-        "rsi": float(r[p]),
+        "state": state,
+        "signal_date": str(dates[conf]),
+        "price": float(closes[conf]),
+        "rsi": float(r[conf]),
         "pivot1_date": str(dates[a]), "pivot1_price": float(series[a]), "pivot1_rsi": float(r[a]),
         "pivot2_date": str(dates[p]), "pivot2_price": float(series[p]), "pivot2_rsi": float(r[p]),
         "sep": int(p - a),
-        "conf_idx": int(p),
+        "conf_idx": int(conf),
     }]

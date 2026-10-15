@@ -45,3 +45,28 @@ def rsi(close: pd.Series, period: int = 14) -> pd.Series:
 
 def ema(series, span: int) -> pd.Series:
     return pd.Series(series).astype(float).ewm(span=span, adjust=False).mean()
+
+
+def atr(high, low, prev_close, period: int = 14) -> pd.Series:
+    """Wilder's Average True Range on daily bars.
+
+    TR = max(high-low, |high-prev_close|, |low-prev_close|), smoothed with Wilder's
+    recursion (seeded with the simple average of the first ``period`` TRs).
+    """
+    high = pd.Series(high).astype(float)
+    low = pd.Series(low).astype(float)
+    prev_close = pd.Series(prev_close).astype(float)
+    tr = pd.concat([
+        high - low,
+        (high - prev_close).abs(),
+        (low - prev_close).abs(),
+    ], axis=1).max(axis=1)
+
+    n = len(tr)
+    out = pd.Series(np.nan, index=tr.index, dtype=float)
+    if n < period:
+        return out
+    out.iloc[period - 1] = tr.iloc[:period].mean()
+    for i in range(period, n):
+        out.iloc[i] = (out.iloc[i - 1] * (period - 1) + tr.iloc[i]) / period
+    return out

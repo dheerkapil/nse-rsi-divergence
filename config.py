@@ -57,6 +57,8 @@ FNO_FILE = os.getenv("FNO_FILE", str(PROJECT_ROOT / "config" / "fno_stocks.json"
 # RSI
 # --------------------------------------------------------------------------
 RSI_PERIOD = int(os.getenv("RSI_PERIOD", "14"))
+ATR_PERIOD = int(os.getenv("ATR_PERIOD", "14"))
+ATR_MULT = float(os.getenv("ATR_MULT", "1.0"))   # confirm 2nd pivot on a k*ATR bounce (closes)
 
 # --------------------------------------------------------------------------
 # Pattern detection (structural — same across profiles)
@@ -111,6 +113,8 @@ def active_params() -> dict:
     params.update(
         PROFILE=PROFILE,
         RSI_PERIOD=RSI_PERIOD,
+        ATR_PERIOD=ATR_PERIOD,
+        ATR_MULT=ATR_MULT,
         PIVOT_ORDER=PIVOT_ORDER,
         PIVOT_BASIS=PIVOT_BASIS,
         FLAT_TOL_PCT=FLAT_TOL_PCT,

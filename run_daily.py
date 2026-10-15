@@ -35,6 +35,15 @@ def _today_ist() -> date:
     return datetime.now(IST).date()
 
 
+def _gh_out(key: str, value: str) -> None:
+    """Emit a GitHub Actions step output when running inside Actions."""
+    import os
+    path = os.environ.get("GITHUB_OUTPUT")
+    if path:
+        with open(path, "a") as f:
+            f.write(f"{key}={value}\n")
+
+
 def latest_available_bhavcopy(session: requests.Session, start: date, max_back: int = 7):
     """Return (date, df) for the most recent published bhavcopy at/behind ``start``."""
     d = start
@@ -109,13 +118,28 @@ def main() -> int:
 
     asof = args.date or _today_ist().isoformat()
 
+    snap_path = config.OUTPUT_DIR / "daily_signals.json"
+    prev_asof = None
+    if snap_path.exists():
+        try:
+            prev_asof = json.loads(snap_path.read_text()).get("asof")
+        except Exception:
+            prev_asof = None
+
     if not args.no_fetch:
         target = date.fromisoformat(asof)
         session = requests.Session()
         got, df = latest_available_bhavcopy(session, target)
         if df is None:
-            print(f"[run_daily] No bhavcopy available at/behind {asof}. Aborting.")
-            return 1
+            # No file within the walk-back window (e.g. exchange closed). Stay
+            # graceful: the half-hourly schedule retries; we stop at midnight.
+            print(f"[run_daily] No bhavcopy available at/behind {asof}; will retry.")
+            _gh_out("changed", "false")
+            return 0
+        if got.isoformat() == prev_asof:
+            print(f"[run_daily] bhavcopy {got.isoformat()} already processed; nothing new.")
+            _gh_out("changed", "false")
+            return 0
         n = store_prices(df)
         dropped = purge_duplicate_days()
         pruned = prune_prices(config.RETENTION_BARS)
@@ -136,6 +160,7 @@ def main() -> int:
     for s in signals[:15]:
         print(f"   {s['symbol']:>12}  {s['direction']:<8} {s['state']:<9} {s['signal_date']}  "
               f"RSI2={s['pivot2_rsi']:.1f}  strength={s['strength']}")
+    _gh_out("changed", "true")
     return 0
 
 

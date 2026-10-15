@@ -14,8 +14,8 @@ def _params(**over):
     p = dict(
         PIVOT_ORDER=3, MIN_PIVOT_SEPARATION=5, LOOKBACK_BARS=120,
         MIN_HISTORY_BARS=20, MIN_PRICE_DROP_PCT=0.0, MIN_RSI_RISE=1.0,
-        RSI_CEILING=55.0, DOWNTURN_GATE=False, DOWNTURN_EMA_SPAN=50,
-        DOWNTURN_SLOPE_BARS=10, PROFILE="loose",
+        RSI_CEILING=55.0, RSI_FLOOR=45.0, DOWNTURN_GATE=False, UPTREND_GATE=False,
+        DOWNTURN_EMA_SPAN=50, DOWNTURN_SLOPE_BARS=10, PIVOT_BASIS="close", PROFILE="loose",
     )
     p.update(over)
     return p
@@ -44,7 +44,8 @@ def test_bullish_divergence_detected():
     cands = detect_divergence(df, pd.Series(rsi_vals), _params())
     assert len(cands) == 1, cands
     c = cands[0]
-    assert c["pivot1_price"] == 100.0 and c["pivot2_price"] == 95.0
+    # pivots are detected on the CLOSE series by default, and closes = lows + 5
+    assert c["pivot1_price"] == 105.0 and c["pivot2_price"] == 100.0
     assert c["pivot1_rsi"] == 30.0 and c["pivot2_rsi"] == 40.0
 
 

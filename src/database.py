@@ -34,11 +34,17 @@ def init_db() -> None:
         )
         """
     )
+    # Drop a signals table that predates the 'direction' column
+    if conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='signals'").fetchone():
+        cols = [row[1] for row in conn.execute("PRAGMA table_info(signals)")]
+        if "direction" not in cols:
+            conn.execute("DROP TABLE signals")
     c.execute(
         """
         CREATE TABLE IF NOT EXISTS signals (
             id           INTEGER PRIMARY KEY AUTOINCREMENT,
             symbol       TEXT NOT NULL,
+            direction    TEXT NOT NULL DEFAULT 'bullish',
             signal_date  TEXT NOT NULL,
             price        REAL,
             rsi          REAL,
@@ -46,8 +52,9 @@ def init_db() -> None:
             pivot2_date  TEXT, pivot2_price REAL, pivot2_rsi REAL,
             strength     REAL,
             profile      TEXT,
+            is_fno       INTEGER DEFAULT 0,
             created_at   TEXT,
-            UNIQUE (symbol, signal_date, profile)
+            UNIQUE (symbol, signal_date, profile, direction)
         )
         """
     )
@@ -117,22 +124,22 @@ def store_signals(signals: list[dict]) -> int:
         conn.execute(
             """
             INSERT INTO signals (
-                symbol, signal_date, price, rsi,
+                symbol, direction, signal_date, price, rsi,
                 pivot1_date, pivot1_price, pivot1_rsi,
                 pivot2_date, pivot2_price, pivot2_rsi,
-                strength, profile, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-            ON CONFLICT(symbol, signal_date, profile) DO UPDATE SET
+                strength, profile, is_fno, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            ON CONFLICT(symbol, signal_date, profile, direction) DO UPDATE SET
                 price=excluded.price, rsi=excluded.rsi,
                 pivot1_date=excluded.pivot1_date, pivot1_price=excluded.pivot1_price, pivot1_rsi=excluded.pivot1_rsi,
                 pivot2_date=excluded.pivot2_date, pivot2_price=excluded.pivot2_price, pivot2_rsi=excluded.pivot2_rsi,
-                strength=excluded.strength
+                strength=excluded.strength, is_fno=excluded.is_fno
             """,
             (
-                s["symbol"], s["signal_date"], s["price"], s["rsi"],
+                s["symbol"], s.get("direction", "bullish"), s["signal_date"], s["price"], s["rsi"],
                 s["pivot1_date"], s["pivot1_price"], s["pivot1_rsi"],
                 s["pivot2_date"], s["pivot2_price"], s["pivot2_rsi"],
-                s["strength"], s["profile"],
+                s["strength"], s["profile"], int(bool(s.get("is_fno"))),
             ),
         )
         n += 1

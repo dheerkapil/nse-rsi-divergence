@@ -47,14 +47,21 @@ def latest_available_bhavcopy(session: requests.Session, start: date, max_back: 
     return None, None
 
 
-def scan_all(params: dict) -> list[dict]:
+def load_fno() -> set:
+    """Load the F&O symbol universe (for tagging signals)."""
+    try:
+        with open(config.FNO_FILE) as f:
+            return set(json.load(f).get("stocks", []))
+    except Exception as e:
+        print(f"[run_daily] F&O list unavailable ({e}); is_fno will be false")
+        return set()
+
+
+def scan_all(params: dict, fno: set) -> list[dict]:
     signals: list[dict] = []
-    symbols = get_symbols()
-    for sym in symbols:
+    for sym in get_symbols():
         df = get_price_history(sym, limit=HISTORY_BARS)
-        sig = scan_symbol(sym, df, params)
-        if sig:
-            signals.append(sig)
+        signals.extend(scan_symbol(sym, df, params, fno))
     signals.sort(key=lambda s: (s["strength"], s["signal_date"]), reverse=True)
     return signals
 
@@ -94,7 +101,8 @@ def main() -> int:
         asof = got.isoformat()
         print(f"[run_daily] Stored {n} EQ rows for {asof} (profile={params['PROFILE']})")
 
-    signals = scan_all(params)
+    fno = load_fno()
+    signals = scan_all(params, fno)
     store_signals(signals)
     set_meta("last_run", datetime.now(IST).isoformat())
     set_meta("last_price_date", get_last_price_date() or "")
@@ -102,8 +110,8 @@ def main() -> int:
 
     print(f"[run_daily] {len(signals)} active signal(s); snapshot -> {snap}")
     for s in signals[:15]:
-        print(f"   {s['symbol']:>12}  {s['signal_date']}  RSI2={s['pivot2_rsi']:.1f}  "
-              f"strength={s['strength']}")
+        print(f"   {s['symbol']:>12}  {s['direction']:<8} {s['signal_date']}  "
+              f"RSI2={s['pivot2_rsi']:.1f}  strength={s['strength']}")
     return 0
 
 

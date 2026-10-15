@@ -65,5 +65,12 @@ def scan_symbol(symbol: str, df: pd.DataFrame, params: dict, fno: set | None = N
         best["last_date"] = str(df["date"].iloc[-1])
         best["age_bars"] = int(len(df) - 1 - best["conf_idx"])
         best["is_fno"] = bool(fno and symbol in fno)
+        # invalidated if price closes beyond the level that defined the setup,
+        # on any bar after the confirmation date (closes only)
+        after = df["close"].iloc[best["conf_idx"] + 1:]
+        if direction == "bullish":
+            best["invalidated"] = bool((after < best["pivot2_price"]).any())
+        else:
+            best["invalidated"] = bool((after > best["pivot2_price"]).any())
         out.append(best)
     return out

@@ -62,7 +62,7 @@ def scan_all(params: dict, fno: set) -> list[dict]:
     for sym in get_symbols():
         df = get_price_history(sym, limit=HISTORY_BARS)
         signals.extend(scan_symbol(sym, df, params, fno))
-    signals.sort(key=lambda s: (s["strength"], s["signal_date"]), reverse=True)
+    signals.sort(key=lambda s: (s["signal_date"], s["strength"]), reverse=True)
     return signals
 
 

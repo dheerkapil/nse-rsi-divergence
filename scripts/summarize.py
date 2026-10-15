@@ -35,8 +35,9 @@ def main() -> int:
         print("_No active signals._")
         return 0
 
-    print("| Symbol | Signal date | Entry (₹) | Last (₹) | % chg | RSI₂ | Strength | Age |")
-    print("|---|---|---:|---:|---:|---:|---:|---:|")
+    sigs = sorted(sigs, key=lambda s: (s.get("signal_date", ""), s.get("strength", 0)), reverse=True)
+    print("| Symbol | Dir | Signal date | Entry (₹) | Last (₹) | % chg | RSI₂ | Strength | Age |")
+    print("|---|---|---|---:|---:|---:|---:|---:|---:|")
     for s in sigs:
         sym = s.get("symbol", "?")
         link = f"[{sym}](https://www.tradingview.com/chart/?symbol=NSE:{sym})"
@@ -48,7 +49,7 @@ def main() -> int:
             pct_s = "—"
         age = s.get("age_bars")
         print(
-            f"| {link} | {s.get('signal_date', '—')} | {_num(entry)} | {_num(last)} | "
+            f"| {link} | {s.get('direction', '—')} | {s.get('signal_date', '—')} | {_num(entry)} | {_num(last)} | "
             f"{pct_s} | {_num(s.get('pivot2_rsi'), '{:.1f}')} | "
             f"{_num(s.get('strength'), '{:.0f}')} | {age if age is not None else '—'}d |"
         )

@@ -29,7 +29,11 @@ DB_PATH = os.getenv("DB_PATH", str(DATA_DIR / "market.db"))
 BHAVCOPY_URL = (
     "https://nsearchives.nseindia.com/products/content/sec_bhavdata_full_{ddmmyyyy}.csv"
 )
-BHAVCOPY_SERIES = "EQ"          # only ordinary equity series
+# Series to keep. All equity-ish series, so a name that switches EQ -> BE (trade
+# for trade) or lives on the SME platform never vanishes from the data. Only the
+# government-securities series (GS/GB) are excluded.
+BHAVCOPY_SERIES = {s.strip() for s in os.getenv(
+    "BHAVCOPY_SERIES", "EQ,BE,BZ,SM,ST,IV,RR,E1").split(",") if s.strip()}
 HTTP_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "

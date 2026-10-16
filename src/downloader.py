@@ -1,7 +1,8 @@
 """NSE bhavcopy downloader.
 
-Fetches the daily full equity bhavcopy CSV from NSE archives and returns a
-normalised DataFrame of EQ-series OHLCV rows.
+Fetches the daily full bhavcopy CSV from NSE archives and returns a normalised
+DataFrame of equity-series OHLCV rows (EQ, and the other equity-ish series such
+as BE/BZ/SM/ST, so a series switch never makes a name vanish).
 """
 from __future__ import annotations
 
@@ -74,7 +75,7 @@ def _parse(content: bytes, d: date) -> pd.DataFrame:
         if not fdates.empty and fdates.dt.date.iloc[0] != d:
             return None
 
-    df = df[df["series"].astype(str).str.strip() == config.BHAVCOPY_SERIES].copy()
+    df = df[df["series"].astype(str).str.strip().isin(config.BHAVCOPY_SERIES)].copy()
     df["symbol"] = df["symbol"].astype(str).str.strip()
     df["date"] = d.isoformat()
 

@@ -31,9 +31,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: data/market.db
-          key: price-db-${{ github.run_id }}
+          key: price-db-v2-${{ github.run_id }}
           restore-keys: |
-            price-db-
+            price-db-v2-
 
       - name: Backfill history on first run
         run: |
@@ -62,7 +62,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: data/market.db
-          key: price-db-${{ github.run_id }}
+          key: price-db-v2-${{ github.run_id }}
 
       - name: Commit signal snapshot
         if: steps.scan.outputs.changed == 'true'

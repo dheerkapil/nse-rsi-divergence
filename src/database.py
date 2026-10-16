@@ -163,6 +163,26 @@ def get_last_price_date() -> str | None:
     return val
 
 
+def stale_symbols(max_gap: int = 10) -> set[str]:
+    """Symbols whose latest bar is more than ``max_gap`` trading days behind the market.
+
+    With every equity series stored, "no data for N trading days" means the name is
+    genuinely not trading (suspended / delisted), so excluding it is safe — a
+    series switch can no longer masquerade as a death.
+    """
+    conn = get_conn()
+    try:
+        dates = [r[0] for r in conn.execute("SELECT DISTINCT date FROM prices ORDER BY date")]
+        if not dates:
+            return set()
+        pos = {d: i for i, d in enumerate(dates)}
+        n = len(dates)
+        last = conn.execute("SELECT symbol, MAX(date) FROM prices GROUP BY symbol").fetchall()
+        return {s for s, ld in last if (n - 1 - pos.get(ld, n - 1)) > max_gap}
+    finally:
+        conn.close()
+
+
 def store_signals(signals: list[dict]) -> int:
     if not signals:
         return 0

@@ -24,6 +24,7 @@ from src.downloader import fetch_bhavcopy  # noqa: E402
 from src.database import (  # noqa: E402
     init_db, store_prices, prune_prices, purge_duplicate_days,
     get_symbols, get_price_history, store_signals, set_meta, get_last_price_date,
+    stale_symbols,
 )
 from src.signals import scan_symbol  # noqa: E402
 
@@ -66,9 +67,12 @@ def load_fno() -> set:
         return set()
 
 
-def scan_all(params: dict, fno: set) -> list[dict]:
+def scan_all(params: dict, fno: set, skip: set | None = None) -> list[dict]:
+    skip = skip or set()
     signals: list[dict] = []
     for sym in get_symbols():
+        if sym in skip:
+            continue
         df = get_price_history(sym, limit=HISTORY_BARS)
         signals.extend(scan_symbol(sym, df, params, fno))
     signals.sort(key=lambda s: (s["signal_date"], s["strength"]), reverse=True)
@@ -151,7 +155,11 @@ def main() -> int:
               f"profile={params['PROFILE']})")
 
     fno = load_fno()
-    signals = scan_all(params, fno)
+    stale = stale_symbols(config.STALE_BARS)
+    if stale:
+        print(f"[run_daily] skipping {len(stale)} symbol(s) with no data for "
+              f">{config.STALE_BARS} candles")
+    signals = scan_all(params, fno, stale)
     store_signals(signals)
     set_meta("last_run", datetime.now(IST).isoformat())
     set_meta("last_price_date", get_last_price_date() or "")

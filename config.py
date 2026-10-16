@@ -52,6 +52,7 @@ REQUEST_RETRIES = 3
 MIN_PRICE = float(os.getenv("MIN_PRICE", "20"))                      # ignore penny stocks
 MIN_AVG_TURNOVER_LACS = float(os.getenv("MIN_AVG_TURNOVER", "100"))  # liquidity floor
 MIN_HISTORY_BARS = int(os.getenv("MIN_HISTORY_BARS", "60"))          # enough bars for RSI
+STALE_BARS = int(os.getenv("STALE_BARS", "10"))                      # drop names with no data for N candles
 RETENTION_BARS = int(os.getenv("RETENTION_BARS", "330"))             # rolling price window per symbol
 
 # F&O universe (NSE symbols with futures & options)

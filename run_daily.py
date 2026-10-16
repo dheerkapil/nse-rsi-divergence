@@ -94,7 +94,8 @@ def write_csv(signals: list[dict]) -> Path:
     cols = ["symbol", "direction", "state", "signal_date", "price", "last_price", "pct_since",
             "rsi", "pivot1_date", "pivot1_price", "pivot1_rsi",
             "pivot2_date", "pivot2_price", "pivot2_rsi",
-            "strength", "age_bars", "is_fno", "invalidated"]
+            "strength", "age_bars", "is_fno", "invalidated", "resolved",
+            "resolution_date", "max_rsi_since", "min_rsi_since"]
     out = config.OUTPUT_DIR / "daily_signals.csv"
     with open(out, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")

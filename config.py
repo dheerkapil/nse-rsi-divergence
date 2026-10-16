@@ -59,6 +59,8 @@ FNO_FILE = os.getenv("FNO_FILE", str(PROJECT_ROOT / "config" / "fno_stocks.json"
 RSI_PERIOD = int(os.getenv("RSI_PERIOD", "14"))
 ATR_PERIOD = int(os.getenv("ATR_PERIOD", "14"))
 ATR_MULT = float(os.getenv("ATR_MULT", "1.0"))   # confirm a turned low on a k*ATR bounce (closes)
+RESOLVE_RSI_BULL = float(os.getenv("RESOLVE_RSI_BULL", "60"))  # bullish: resolved once RSI closes above
+RESOLVE_RSI_BEAR = float(os.getenv("RESOLVE_RSI_BEAR", "40"))  # bearish: resolved once RSI closes below
 
 # --------------------------------------------------------------------------
 # Pattern detection (structural — same across profiles)
@@ -115,6 +117,8 @@ def active_params() -> dict:
         RSI_PERIOD=RSI_PERIOD,
         ATR_PERIOD=ATR_PERIOD,
         ATR_MULT=ATR_MULT,
+        RESOLVE_RSI_BULL=RESOLVE_RSI_BULL,
+        RESOLVE_RSI_BEAR=RESOLVE_RSI_BEAR,
         PIVOT_ORDER=PIVOT_ORDER,
         PIVOT_BASIS=PIVOT_BASIS,
         FLAT_TOL_PCT=FLAT_TOL_PCT,

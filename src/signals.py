@@ -3,9 +3,13 @@
 Two states, both requiring the second pivot to have *turned*:
   * ``forming``   — the turn is fresh (the low is younger than ``PIVOT_ORDER`` bars).
   * ``confirmed`` — the low has ``PIVOT_ORDER`` bars settled behind it.
+
+``resolved`` marks a setup that has done its job: RSI closed past the resolve
+level on some bar since the signal (bullish > 60, bearish < 40).
 """
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 import config
@@ -56,6 +60,20 @@ def _finalize(cand: dict, symbol: str, df: pd.DataFrame, params: dict,
     else:
         cand["invalidated"] = bool((after_c > cand["pivot2_price"]).any()
                                    or (after_r > cand["pivot2_rsi"]).any())
+    # resolved = the divergence has done its job: RSI closed past the level on any
+    # bar since the signal (bullish > 60, bearish < 40), EOD closes only.
+    r_since = r.iloc[cand["conf_idx"]:]
+    thr = params.get("RESOLVE_RSI_BULL", 60.0) if cand["direction"] == "bullish" \
+        else params.get("RESOLVE_RSI_BEAR", 40.0)
+    hit = (r_since > thr) if cand["direction"] == "bullish" else (r_since < thr)
+    cand["resolved"] = bool(hit.any())
+    if cand["resolved"]:
+        pos = int(np.argmax(hit.to_numpy()))
+        cand["resolution_date"] = str(df["date"].iloc[cand["conf_idx"] + pos])
+    else:
+        cand["resolution_date"] = ""
+    cand["max_rsi_since"] = round(float(r_since.max()), 1) if len(r_since) else None
+    cand["min_rsi_since"] = round(float(r_since.min()), 1) if len(r_since) else None
     return cand
 
 

@@ -87,6 +87,8 @@
             border-radius:4px; padding:0 3px; margin-left:5px; vertical-align:middle; }
         .form-tag { font-size:.6rem; font-weight:700; color:var(--primary); border:1px solid var(--primary);
             border-radius:4px; padding:0 3px; margin-left:5px; vertical-align:middle; }
+        .res-tag { font-size:.6rem; font-weight:700; color:var(--success); border:1px solid var(--success);
+            border-radius:4px; padding:0 3px; margin-left:5px; vertical-align:middle; }
         .num { text-align:right; font-variant-numeric:tabular-nums; }
         .pos { color:var(--success); } .neg { color:var(--danger); }
         .pivot { color:var(--text-muted); font-size:.78rem; }
@@ -126,7 +128,9 @@
                 <button data-d="bearish">Bearish</button>
             </span></div>
             <div><span class="seg-label">View</span><span class="seg" id="viewSeg">
-                <button data-v="live" class="active">Live</button>
+                <button data-v="current" class="active">Current</button>
+                <button data-v="resolved">Resolved</button>
+                <button data-v="invalidated">Invalidated</button>
                 <button data-v="all">All</button>
             </span></div>
             <div><span class="seg-label">State</span><span class="seg" id="stateSeg">
@@ -182,7 +186,7 @@ toggle.onclick = () => {
     toggle.textContent = root.classList.contains('dark') ? '☀️' : '🌙';
 };
 
-const state = { universe: 'all', direction: 'bullish', view: 'live', state: 'all' };
+const state = { universe: 'all', direction: 'bullish', view: 'current', state: 'all' };
 
 const fmt = (n, d=2) => (n === null || n === undefined || isNaN(n)) ? '—' : Number(n).toFixed(d);
 const pivot = (dt, p, r) => `<span class="pivot">${dt||'—'} · ₹${fmt(p)} · RSI ${fmt(r,1)}</span>`;
@@ -207,12 +211,17 @@ function render() {
         `📋 Signals — regular ${state.direction} divergence` +
         (state.universe === 'fno' ? ' (F&O)' : '') +
         (state.state !== 'all' ? ` — ${state.state}` : '') +
-        (state.view === 'live' ? ' — live' : ' — all (incl. invalidated)') +
+        (state.view === 'current' ? ' — current setups' :
+         state.view === 'resolved' ? ' — resolved (RSI)' :
+         state.view === 'invalidated' ? ' — invalidated (study)' : ' — all') +
         (isNaN(maxAge) ? '' : ` — ≤${maxAge} candles`);
     let rows = enriched().filter(s =>
         s.direction === state.direction &&
         (state.universe === 'all' || s.is_fno) &&
-        (state.view === 'all' || !s.invalidated) &&
+        (state.view === 'all' ||
+         (state.view === 'current' && !s.invalidated && !s.resolved) ||
+         (state.view === 'resolved' && !s.invalidated && !!s.resolved) ||
+         (state.view === 'invalidated' && !!s.invalidated)) &&
         (state.state === 'all' || (s.state || 'confirmed') === state.state) &&
         (isNaN(maxAge) || (s.age_bars ?? 0) <= maxAge) &&
         s.symbol.includes(q) &&
@@ -232,6 +241,7 @@ function render() {
         const pctTxt = pct === null ? '—' : (pct >= 0 ? '+' : '') + fmt(pct) + '%';
         const tags = (s.is_fno ? '<span class="fno-tag">F&amp;O</span>' : '') +
                      ((s.state === 'forming') ? '<span class="form-tag">forming</span>' : '') +
+                     (s.resolved ? '<span class="res-tag">resolved</span>' : '') +
                      (s.invalidated ? '<span class="inv-tag">invalid</span>' : '');
         return `<tr class="${s.invalidated ? 'invalid' : ''}">
             <td class="sym"><a class="symlink" href="https://www.tradingview.com/chart/?symbol=NSE:${s.symbol}" target="_blank" rel="noopener">${s.symbol}</a>${tags}</td>
@@ -285,7 +295,7 @@ document.querySelectorAll('#sigTable thead th[data-key]').forEach(th => {
 });
 const CSV_COLS = ['symbol','direction','state','signal_date','price','last_price','pct_since','rsi',
     'pivot1_date','pivot1_price','pivot1_rsi','pivot2_date','pivot2_price','pivot2_rsi',
-    'strength','age_bars','is_fno','invalidated'];
+    'strength','age_bars','is_fno','invalidated','resolved','resolution_date','max_rsi_since','min_rsi_since'];
 function downloadCSV() {
     const esc = v => (v === null || v === undefined) ? ''
         : (typeof v === 'number' ? v : '"' + String(v).replace(/"/g, '""') + '"');
@@ -294,7 +304,7 @@ function downloadCSV() {
     const blob = new Blob([lines.join('\n')], {type: 'text/csv;charset=utf-8'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `rsi_divergence_${state.direction}${state.universe === 'fno' ? '_fno' : ''}${state.state !== 'all' ? '_' + state.state : ''}${state.view === 'all' ? '_all' : ''}.csv`;
+    a.download = `rsi_divergence_${state.direction}${state.universe === 'fno' ? '_fno' : ''}${state.state !== 'all' ? '_' + state.state : ''}_${state.view}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(a.href);
 }

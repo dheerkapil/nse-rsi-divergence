@@ -3,6 +3,8 @@
 
 Usage:
     python run_daily.py                 # today's bhavcopy (walks back over holidays)
+    python run_daily.py --wait          # wait for TODAY's bhavcopy, retrying every
+                                        # 30 min until midnight IST
     python run_daily.py --date 2026-10-09
     python run_daily.py --no-fetch      # rescan existing DB only
 """
@@ -11,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -55,6 +58,27 @@ def latest_available_bhavcopy(session: requests.Session, start: date, max_back: 
                 return d, df
         d -= timedelta(days=1)
     return None, None
+
+
+def wait_for_today(session: requests.Session, target: date,
+                   deadline: tuple[int, int] = (23, 45), interval: int = 1800):
+    """Block until ``target``'s bhavcopy is published, or the IST deadline passes.
+
+    Retries every ``interval`` seconds (default 30 min) so a single dispatched run
+    covers the evening: first try ~19:00, then half-hourly until midnight.
+    """
+    while True:
+        got, df = latest_available_bhavcopy(session, target)
+        if df is not None and got == target:
+            return got, df
+        now = datetime.now(IST)
+        if (now.hour, now.minute) >= deadline:
+            print(f"[run_daily] {target} still not published at the deadline "
+                  f"({deadline[0]:02d}:{deadline[1]:02d} IST); giving up for tonight")
+            return got, df
+        print(f"[run_daily] {target} not published yet (latest {got}); "
+              f"retrying in {interval // 60} min", flush=True)
+        time.sleep(interval)
 
 
 def load_fno() -> set:
@@ -117,6 +141,8 @@ def main() -> int:
     ap.add_argument("--date", help="target date YYYY-MM-DD (default: today IST)")
     ap.add_argument("--no-fetch", action="store_true", help="skip download, rescan DB")
     ap.add_argument("--force", action="store_true", help="rescan even if the bhavcopy is already processed")
+    ap.add_argument("--wait", action="store_true",
+                    help="wait for today's bhavcopy, retrying every 30 min until midnight IST")
     args = ap.parse_args()
 
     init_db()
@@ -135,7 +161,10 @@ def main() -> int:
     if not args.no_fetch:
         target = date.fromisoformat(asof)
         session = requests.Session()
-        got, df = latest_available_bhavcopy(session, target)
+        if args.wait:
+            got, df = wait_for_today(session, target)
+        else:
+            got, df = latest_available_bhavcopy(session, target)
         if df is None:
             # No file within the walk-back window (e.g. exchange closed). Stay
             # graceful: the half-hourly schedule retries; we stop at midnight.
@@ -150,7 +179,7 @@ def main() -> int:
         dropped = purge_duplicate_days()
         pruned = prune_prices(config.RETENTION_BARS)
         asof = got.isoformat()
-        print(f"[run_daily] Stored {n} EQ rows for {asof}; dropped {dropped} stale-day row(s); "
+        print(f"[run_daily] Stored {n} rows for {asof}; dropped {dropped} stale-day row(s); "
               f"pruned {pruned} old row(s) (window={config.RETENTION_BARS} bars/symbol, "
               f"profile={params['PROFILE']})")
 

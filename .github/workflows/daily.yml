@@ -2,9 +2,9 @@ name: Daily RSI-divergence scan
 
 on:
   schedule:
-    # Retry every 30 min from ~18:00 IST until the bhavcopy lands; last attempt
-    # at midnight. 12:00-18:30 UTC == 17:30-24:00 IST. Runs are cheap no-ops
-    # until the day's file appears (the scan exits early if already processed).
+    # Backup trigger: every 30 min from ~17:30 IST to midnight. GitHub's own
+    # scheduler is unreliable, so the primary trigger is an external cron that
+    # dispatches this workflow at 19:00 IST (the run then waits for the bhavcopy).
     - cron: "0,30 12-18 * * 1-5"
   workflow_dispatch: {}
 
@@ -48,7 +48,7 @@ jobs:
           PROFILE: ${{ vars.PROFILE || 'tight' }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            python run_daily.py --force
+            python run_daily.py --wait
           else
             python run_daily.py
           fi
